@@ -1,0 +1,656 @@
+﻿@using AngularGenerator.Core.Models
+@model ComponentDefinition
+
+@{
+    ViewData["Title"] = "Angular CRUD Generator";
+    Layout = null;
+
+    // เช็คสถานะ Select All ของ CRUD
+    bool isAllCrud = Model?.IsGet == true && Model?.IsGetById == true && Model?.IsPost == true && Model?.IsUpdate == true && Model?.IsDelete == true;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angular CRUD Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        /* Header Style */
+        .main-header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* DB Status Badge */
+        .db-status {
+            font-size: 0.9rem;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(5px);
+        }
+
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            background-color: #ccc;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .status-online {
+            background-color: #4ade80;
+            box-shadow: 0 0 8px #4ade80;
+        }
+
+        .status-offline {
+            background-color: #f87171;
+        }
+
+        /* Custom Cards */
+        .card-settings .card-header {
+            background-color: #66a3ff;
+            color: white;
+            font-weight: bold;
+        }
+
+        .card-result .card-header {
+            background-color: #2e7d32;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Buttons */
+        .btn-generate {
+            background-color: #2e7d32;
+            color: white;
+            font-weight: bold;
+            border: none;
+        }
+
+            .btn-generate:hover {
+                background-color: #1b5e20;
+                color: white;
+            }
+
+        /* Copy Button */
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            z-index: 10;
+            opacity: 0.7;
+            transition: 0.3s;
+        }
+
+            .copy-btn:hover {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+
+        .tab-pane {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-header shadow-sm">
+        <h3 class="m-0"><i class="fa-brands fa-angular me-2"></i>Angular CRUD Generator</h3>
+        <div class="db-status text-white d-flex align-items-center" id="dbStatusBadge">
+            <span class="status-dot" id="dbStatusDot"></span>
+            <span id="dbStatusText">Checking...</span>
+            <button class="btn btn-sm btn-link text-white p-0 ms-2" onclick="checkDbStatus()" title="Refresh DB"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+    </div>
+
+    <div class="container-fluid mt-4 px-4">
+        <form action="/Generator/Index" method="post" id="genForm">
+            <div class="row">
+
+                <!-- Config Form ด้านซ้าย (col-md-4) -->
+                <div class="col-md-4">
+                    <div class="card card-settings mb-4 shadow-sm">
+                        <div class="card-header">ตั้งค่า</div>
+                        <div class="card-body bg-light">
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-primary">Table Name</label>
+                                <div class="input-group">
+                                    <input type="text" id="tableNameInput" name="tableName" class="form-control"
+                                           placeholder="e.g. Products" value="@ViewBag.LastTableName" required>
+                                    <button class="btn btn-primary" type="button" id="btnLoad" onclick="loadColumns()">
+                                        <i class="fa-solid fa-sync"></i> Load
+                                    </button>
+                                </div>
+                                <small class="text-muted" id="loadStatus"></small>
+                            </div>
+
+                            <div class="card mb-3">
+                                <div class="card-body py-2">
+                                    <label class="fw-bold mb-2 d-block">
+                                        FieldName
+                                        <i class="fas fa-info-circle text-muted ms-1" title="Primary Key จะถูกใช้ใน GetById, Update, Delete"></i> 
+                                    </label>
+
+                                    <div class="form-check border-bottom pb-2 mb-2">
+                                        <input class="form-check-input" type="checkbox" id="selectAllFields" checked onchange="toggleAllFields(this)">
+                                        <label class="form-check-label fw-bold text-primary" for="selectAllFields">เลือกทั้งหมด</label>
+                                    </div>
+
+                                    <div id="fieldContainer" class="border rounded p-2 bg-white" style="max-height: 280px; overflow-y: auto;">
+                                        @if (Model?.Fields != null && Model.Fields.Count > 0)
+                                        {
+                                            // ดึง List ของ Field ที่เคยเลือกไว้ (ถ้าเป็น null คือเพิ่ง load หรือเลือกทั้งหมด)
+                                            var selected = ViewBag.SelectedFields as List<string>;
+
+                                            <table class="table table-sm mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 40px;">
+                                                            <i class="fas fa-check text-success" title="Include"></i>
+                                                        </th>
+                                                        <th>Field Name</th>
+                                                        <th>Type</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var f in Model.Fields)
+                                                    {
+                                                        var isChecked = (selected == null || selected.Count == 0 || selected.Contains(f.FieldName)) ? "checked" : "";
+                                                        // PK ต้อง checked เสมอและ disabled (ไม่ให้ uncheck)
+                                                        var isDisabled = f.IsPrimaryKey ? "disabled" : "";
+                                                        var pkChecked = f.IsPrimaryKey ? "checked" : isChecked;
+
+                                                        <tr class="@(f.IsPrimaryKey ? "table-warning" : "")">
+                                                            <td class="text-center">
+                                                                <input class="form-check-input field-checkbox" type="checkbox" 
+                                                                       name="selectedFields" value="@f.FieldName" 
+                                                                       @pkChecked @isDisabled>
+                                                                @* Hidden input สำหรับ PK เพื่อให้ส่งค่าไปได้แม้ disabled *@
+                                                                @if (f.IsPrimaryKey)
+                                                                {
+                                                                    <input type="hidden" name="selectedFields" value="@f.FieldName">
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                <span class="fw-bold text-dark small">@f.FieldName</span>
+                                                                @if (f.IsPrimaryKey)
+                                                                {
+                                                                    <i class="fas fa-key text-warning ms-1" title="Primary Key (Required)"></i>
+                                                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">PK</span>
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                <span class="text-muted small">@f.TsType</span>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        }
+                                        else
+                                        {
+                                            <div class="h-100 d-flex align-items-center justify-content-center" style="min-height: 120px;">
+                                                <small class="text-muted fst-italic" style="color:red">Table not found.</small>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Component Name</label>
+                                <input type="text" name="componentName" class="form-control"
+                                       placeholder="Auto-generated if empty (e.g. Products)"
+                                       value="@(Model?.EntityName != null && Model.EntityName != ViewBag.LastTableName ? Model.EntityName : "")">
+                            </div>
+
+                            <!-- Report/CRUD Mode Selection -->
+                            <div class="card mb-3">
+                                @{
+                                    var selectedMode = ViewBag.GenerationMode ?? "Report";
+                                }
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="generationMode" id="modeReport" value="Report" @(selectedMode == "Report" ? "checked" : "") onchange="toggleCrudOptions()">
+                                    <label class="btn btn-outline-primary btn-lg" for="modeReport">
+                                        <i class="fas fa-file-alt"></i> Report
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="generationMode" id="modeCrud" value="CRUD" @(selectedMode == "CRUD" ? "checked" : "") onchange="toggleCrudOptions()">
+                                    <label class="btn btn-outline-primary btn-lg" for="modeCrud">
+                                        <i class="fas fa-database"></i> CRUD
+                                    </label>
+                                </div>
+                                @* <small class="text-muted d-block mt-2">
+                                    <strong>Report:</strong> แสดงข้อมูลอย่างเดียว (Read-only)
+                                    <br> 
+                                    <strong>CRUD:</strong> เลือก operations เอง
+                                </small>  *@
+                            </div>
+
+                            <div class="card mb-3" id="crudOptionsCard">
+                                <div class="card-body py-2">
+                                    <label class="fw-bold mb-2 d-block">Choose CRUD</label>
+
+                                    <div class="form-check border-bottom pb-2 mb-2">
+                                        <input class="form-check-input" type="checkbox" id="selectAllCrud"
+                                               onchange="toggleAllCrud(this)" @(isAllCrud ? "checked" : "")>
+                                        <label class="form-check-label fw-bold text-primary " for="selectAllCrud">เลือกทั้งหมด</label>
+                                    </div>
+
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="IsGet" asp-for="IsGet" checked disabled>
+                                                <input type="hidden" name="IsGet" value="true"> <!-- Always true -->
+                                                <label class="form-check-label text-muted" for="IsGet">
+                                                    <i class="fas fa-lock me-1"></i> Get (Read)
+                                                    <span class="badge bg-primary ms-2" style="font-size: 0.7rem;">REQUIRED</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input crud-checkbox" type="checkbox" id="IsGetById" asp-for="IsGetById">
+                                                <label class="form-check-label" for="IsGetById">Get By ID</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input crud-checkbox" type="checkbox" id="IsPost" asp-for="IsPost">
+                                                <label class="form-check-label" for="IsPost">Post (Create)</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input crud-checkbox" type="checkbox" id="IsUpdate" asp-for="IsUpdate">
+                                                <label class="form-check-label" for="IsUpdate">Update</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input crud-checkbox" type="checkbox" id="IsDelete" asp-for="IsDelete">
+                                                <label class="form-check-label" for="IsDelete">Delete</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- API Base URL  -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    API Base URL
+                                    <i class="fas fa-info-circle text-muted ms-1" title="ใช้ใน Service สำหรับเรียก HTTP requests"></i>
+                                </label>
+                                <input type="text" id="apiBaseUrl" name="apiBaseUrl" class="form-control"
+                                       placeholder="e.g. http://localhost:5000/api"
+                                       value="@ViewBag.ApiBaseUrl">
+                            </div>
+
+                            <!-- NEW: UI Layout Selection -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-info text-white py-2">
+                                    <i class="fas fa-layout"></i> UI Layout
+                                </div>
+                                <div class="card-body py-2">
+                                    @{
+                                        var selectedLayout = ViewBag.LayoutType ?? Model?.LayoutType.ToString() ?? "TableView";
+                                    }
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="layoutType" id="layoutTable" 
+                                               value="TableView" @(selectedLayout == "TableView" ? "checked" : "")>
+                                        <label class="form-check-label" for="layoutTable">
+                                            <i class="fas fa-table"></i> Table View (รายการแบบตาราง)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="layoutType" id="layoutCard" 
+                                               value="CardView" @(selectedLayout == "CardView" ? "checked" : "")>
+                                        <label class="form-check-label" for="layoutCard">
+                                            <i class="fas fa-th-large"></i> Card View (รายการแบบการ์ด)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CSS Framework Selection -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-success text-white py-2">
+                                    <i class="fas fa-palette"></i> CSS Framework
+                                </div>
+                                <div class="card-body py-2">
+                                    @{
+                                        var selectedFramework = ViewBag.CssFramework ?? Model?.CssFramework.ToString() ?? "Bootstrap";
+                                    }
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="cssFramework" id="cssBasic" 
+                                               value="BasicCSS" @(selectedFramework == "BasicCSS" ? "checked" : "")>
+                                        <label class="form-check-label" for="cssBasic">
+                                            <i class="fas fa-file-code"></i> Basic CSS
+                                            <small class="text-muted d-block">✅ จะได้ไฟล์ .css เพิ่ม</small>
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="cssFramework" id="cssBootstrap" 
+                                               value="Bootstrap" @(selectedFramework == "Bootstrap" ? "checked" : "")>
+                                        <label class="form-check-label" for="cssBootstrap">
+                                            <i class="fab fa-bootstrap"></i> Bootstrap 5
+                                            <small class="text-muted d-block">ใช้ Bootstrap classes (Default)</small>
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="cssFramework" id="cssMaterial" 
+                                               value="AngularMaterial" @(selectedFramework == "AngularMaterial" ? "checked" : "")>
+                                        <label class="form-check-label" for="cssMaterial">
+                                            <i class="fas fa-brush"></i> Angular Material
+                                            <small class="text-muted d-block">ใช้ Material Design</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-generate w-100 shadow-sm py-2">Generate Code</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result ด้านขวา (col-md-8) -->
+                <div class="col-md-8">
+                    
+                    <label class="fw-bold mb-1">Create Component</label>
+                    <div class="bg-secondary text-white p-2 rounded mb-3 d-flex justify-content-between align-items-center font-monospace">
+                        <span id="cliCommand">ng generate component <strong>@(Model?.Selector ?? "<component-name>")</strong> --standalone</span>
+                        <button type="button" class="btn btn-sm btn-dark" onclick="copyText('cliCommand', true)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+
+                    @* API Endpoints Preview *@
+                    @* @if (Model != null && !string.IsNullOrEmpty(Model.GeneratedService))
+                    {
+                        var apiBase = ViewBag.ApiBaseUrl ?? "/api";
+                        var entityLower = Model.EntityName.ToLower();
+                        
+                        <div class="card mb-3 border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <i class="fas fa-network-wired"></i> API Endpoints
+                                <small class="ms-2">(copy สำหรับ Backend)</small>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 80px;">Method</th>
+                                                <th>Endpoint</th>
+                                                <th style="width: 60px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="font-monospace small">
+                                            @if (Model.IsGet)
+                                            {
+                                                <tr>
+                                                    <td><span class="badge bg-success">GET</span></td>
+                                                    <td id="apiGet">@apiBase/@entityLower</td>
+                                                    <td><button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyText('apiGet', true)"><i class="fa-regular fa-copy"></i></button></td>
+                                                </tr>
+                                            }
+                                            @if (Model.IsGetById)
+                                            {
+                                                <tr>
+                                                    <td><span class="badge bg-success">GET</span></td>
+                                                    <td id="apiGetById">@apiBase/@entityLower/{id}</td>
+                                                    <td><button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyText('apiGetById', true)"><i class="fa-regular fa-copy"></i></button></td>
+                                                </tr>
+                                            }
+                                            @if (Model.IsPost)
+                                            {
+                                                <tr>
+                                                    <td><span class="badge bg-primary">POST</span></td>
+                                                    <td id="apiPost">@apiBase/@entityLower</td>
+                                                    <td><button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyText('apiPost', true)"><i class="fa-regular fa-copy"></i></button></td>
+                                                </tr>
+                                            }
+                                            @if (Model.IsUpdate)
+                                            {
+                                                <tr>
+                                                    <td><span class="badge bg-warning">PUT</span></td>
+                                                    <td id="apiPut">@apiBase/@entityLower/{id}</td>
+                                                    <td><button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyText('apiPut', true)"><i class="fa-regular fa-copy"></i></button></td>
+                                                </tr>
+                                            }
+                                            @if (Model.IsDelete)
+                                            {
+                                                <tr>
+                                                    <td><span class="badge bg-danger">DELETE</span></td>
+                                                    <td id="apiDelete">@apiBase/@entityLower/{id}</td>
+                                                    <td><button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyText('apiDelete', true)"><i class="fa-regular fa-copy"></i></button></td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-2 p-2 bg-light rounded">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle"></i> 
+                                        <strong>Note:</strong> {id} = <code>@(Model.PrimaryKeyName ?? "id")</code> (Primary Key)
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    } *@
+
+                    <div class="card card-result shadow-sm h-100" style="margin-bottom: 10px;">
+                        <div class="card-header">
+                            <span>ผลลัพธ์</span>
+                            @if (Model != null && !string.IsNullOrEmpty(Model.GeneratedHtml))
+                            {
+                                <div class="d-inline-block ms-3">
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-@(Model.LayoutType == UILayoutType.TableView ? "table" : "th-large")"></i>
+                                        @Model.LayoutType
+                                    </span>
+                                    <span class="badge bg-@(Model.CssFramework == CSSFramework.BasicCSS ? "warning" : Model.CssFramework == CSSFramework.Bootstrap ? "primary" : "success")">
+                                        @Model.CssFramework
+                                        @if (Model.CssFramework == CSSFramework.BasicCSS)
+                                        {
+                                            <i class="fas fa-file-code ms-1"></i>
+                                        }
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                        <div class="card-body p-0 result-area">
+                            @if (Model != null && !string.IsNullOrEmpty(Model.GeneratedHtml))
+                            {
+                                <ul class="nav nav-tabs bg-light px-2 pt-2" role="tablist">
+                                    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-html">HTML</a></li>
+                                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-ts">TypeScript</a></li>
+                                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-svc">Service</a></li>
+                                    @if (!string.IsNullOrEmpty(Model.GeneratedCss))
+                                    {
+                                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-css">CSS</a></li>
+                                    }
+                                </ul>
+                                <div class="tab-content h-100">
+                                    <div class="tab-pane fade show active h-100" id="tab-html">
+                                        <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeHtml')"><i class="fa-regular fa-copy"></i> Copy HTML</button>
+                                        <textarea readonly="true" id="codeHtml" class="form-control border-0 h-100 font-monospace p-3 bg-light">@Model.GeneratedHtml</textarea>
+                                    </div>
+                                    <div class="tab-pane fade h-100" id="tab-ts">
+                                        <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeTs')"><i class="fa-regular fa-copy"></i> Copy TS</button>
+                                        <textarea readonly="true" id="codeTs" class="form-control border-0 h-100 font-monospace p-3 bg-light">@Model.GeneratedTs</textarea>
+                                    </div>
+                                    <div class="tab-pane fade h-100" id="tab-svc">
+                                        <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeSvc')"><i class="fa-regular fa-copy"></i> Copy Service</button>
+                                        <textarea readonly="true" id="codeSvc" class="form-control border-0 h-100 font-monospace p-3 bg-light">@Model.GeneratedService</textarea>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(Model.GeneratedCss))
+                                    {
+                                        <div class="tab-pane fade h-100" id="tab-css">
+                                            <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeCss')"><i class="fa-regular fa-copy"></i> Copy CSS</button>
+                                            <textarea readonly="true" id="codeCss" class="form-control border-0 h-100 font-monospace p-3 bg-light">@Model.GeneratedCss</textarea>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() { 
+            checkDbStatus();
+            toggleCrudOptions();
+            
+            // DEBUG: ดูค่า radio button ก่อน submit
+            document.getElementById('genForm').addEventListener('submit', function(e) {
+                var layoutChecked = document.querySelector('input[name="layoutType"]:checked');
+                var cssChecked = document.querySelector('input[name="cssFramework"]:checked');
+                var modeChecked = document.querySelector('input[name="generationMode"]:checked');
+                
+                console.log('=== FORM SUBMIT DEBUG ===');
+                console.log('Mode:', modeChecked ? modeChecked.value : 'NONE');
+                console.log('Layout Type:', layoutChecked ? layoutChecked.value : 'NONE');
+                console.log('CSS Framework:', cssChecked ? cssChecked.value : 'NONE');
+                console.log('=========================');
+            });
+        });
+
+        // --- Logic: Toggle CRUD Options based on Mode ---
+        function toggleCrudOptions() {
+            var modeReport = document.getElementById('modeReport');
+            var modeCrud = document.getElementById('modeCrud');
+            var crudCard = document.getElementById('crudOptionsCard');
+            
+            if (modeReport && modeReport.checked) {
+                // Report Mode: ซ่อน CRUD options (Get จะถูกส่งไปเสมอจาก hidden input)
+                crudCard.style.display = 'none';
+                // Reset other checkboxes
+                document.getElementById('IsGetById').checked = false;
+                document.getElementById('IsPost').checked = false;
+                document.getElementById('IsUpdate').checked = false;
+                document.getElementById('IsDelete').checked = false;
+            } else {
+                // CRUD Mode: แสดง CRUD options
+                crudCard.style.display = 'block';
+            }
+        }
+
+        // --- Logic: Check DB Status ---
+        function checkDbStatus() {
+            var dot = document.getElementById('dbStatusDot');
+            var text = document.getElementById('dbStatusText');
+            dot.className = 'status-dot'; text.innerText = 'Checking...';
+            fetch('/Generator/CheckDbConnection').then(r => r.json()).then(d => {
+                if (d.success) { dot.className = 'status-dot status-online'; text.innerText = ' DB Connected'; }
+                else { dot.className = 'status-dot status-offline'; text.innerText = 'DB Disconnected'; }
+            }).catch(e => { dot.className = 'status-dot status-offline'; text.innerText = 'Error'; });
+        }
+
+        // --- Logic: Load Columns (AJAX) ---
+        function loadColumns() {
+            var tableName = document.getElementById('tableNameInput').value;
+            var btn = document.getElementById('btnLoad');
+            var status = document.getElementById('loadStatus');
+            var container = document.getElementById('fieldContainer');
+
+            if (!tableName) { alert('Please enter Table Name'); return; }
+
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            status.innerText = '';
+
+            fetch('/Generator/GetColumns?tableName=' + tableName)
+                .then(r => r.json())
+                .then(data => {
+                    btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-sync"></i> Load';
+                    container.innerHTML = '';
+
+                    if (data.success) {
+                        status.className = 'text-success small'; status.innerText = 'Found ' + data.fields.length + ' columns.';
+
+                        // สร้างตารางสำหรับแสดง Fields พร้อม PK badge
+                        var table = `
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;"><i class="fas fa-check text-success" title="Include"></i></th>
+                                        <th>Field Name</th>
+                                        <th>Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                        
+                        data.fields.forEach((f, idx) => {
+                            var isPK = f.isPrimaryKey;
+                            var pkBadge = isPK ? '<i class="fas fa-key text-warning ms-1" title="Primary Key (Required)"></i><span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">PK</span>' : '';
+                            var disabled = isPK ? 'disabled' : '';
+                            var rowClass = isPK ? 'table-warning' : '';
+                            var hiddenInput = isPK ? `<input type="hidden" name="selectedFields" value="${f.fieldName}">` : '';
+                            
+                            table += `
+                                <tr class="${rowClass}">
+                                    <td class="text-center">
+                                        <input class="form-check-input field-checkbox" type="checkbox" 
+                                               name="selectedFields" value="${f.fieldName}" checked ${disabled}>
+                                        ${hiddenInput}
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-dark small">${f.fieldName}</span>
+                                        ${pkBadge}
+                                    </td>
+                                    <td><span class="text-muted small">${f.tsType}</span></td>
+                                </tr>`;
+                        });
+                        
+                        table += `</tbody></table>`;
+                        container.innerHTML = table;
+                        
+                        // Reset Select All
+                        document.getElementById('selectAllFields').checked = true;
+                    } else {
+                        status.className = 'text-danger small'; status.innerText = 'Error: ' + data.message;
+                        container.innerHTML = '<div class="h-100 d-flex align-items-center justify-content-center" style="min-height: 120px;"><small class="text-muted fst-italic">Press \'Load\' to see columns...</small></div>';
+                    }
+                })
+                .catch(e => {
+                    btn.disabled = false; btn.innerHTML = 'Load';
+                    container.innerHTML = '<div class="h-100 d-flex align-items-center justify-content-center" style="min-height: 120px;"><small class="text-muted fst-italic">Press \'Load\' to see columns...</small></div>';
+                });
+        }
+
+        // --- Logic: Toggle Select All (Fields) ---
+        function toggleAllFields(source) {
+            var checkboxes = document.querySelectorAll('.field-checkbox:not([disabled])');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        // --- Logic: Toggle Select All (CRUD) ---
+        function toggleAllCrud(source) {
+            var checkboxes = document.querySelectorAll('.crud-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        // --- Logic: Copy to Clipboard ---
+        function copyText(elementId, isTextContent = false) {
+            var text = isTextContent ? document.getElementById(elementId).innerText : document.getElementById(elementId).value;
+            navigator.clipboard.writeText(text).then(() => alert('Copied!'), () => alert('Failed to copy'));
+        }
+    </script>
+</body>
+</html>

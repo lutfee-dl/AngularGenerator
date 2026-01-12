@@ -1,0 +1,220 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\ProjectFinal\\Angular_Generate\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|d:\\projectfinal\\angular_generate\\views\\generator\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|solutionrelative:views\\generator\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|d:\\projectfinal\\angular_generate\\models\\componentdefinition.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|solutionrelative:models\\componentdefinition.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|d:\\projectfinal\\angular_generate\\controllers\\generatorcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|solutionrelative:controllers\\generatorcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|d:\\projectfinal\\angular_generate\\services\\builders\\icodebuilder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|solutionrelative:services\\builders\\icodebuilder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|d:\\projectfinal\\angular_generate\\services\\builders\\typescriptbuilder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|solutionrelative:services\\builders\\typescriptbuilder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|d:\\projectfinal\\angular_generate\\services\\angularcomponentfactory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|solutionrelative:services\\angularcomponentfactory.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|d:\\projectfinal\\angular_generate\\services\\dbschemaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|solutionrelative:services\\dbschemaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|d:\\projectfinal\\angular_generate\\services\\fullstackgenerator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|solutionrelative:services\\fullstackgenerator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|d:\\projectfinal\\angular_generate\\services\\viewrenderservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|solutionrelative:services\\viewrenderservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|d:\\projectfinal\\angular_generate\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|d:\\projectfinal\\angular_generate\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|d:\\projectfinal\\angular_generate\\angular_generate.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{94A76AC0-4FB1-4028-883A-10E758D1703D}|Angular_Generate.csproj|solutionrelative:angular_generate.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 5,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "ICodeBuilder.cs",
+              "DocumentMoniker": "D:\\ProjectFinal\\Angular_Generate\\Services\\Builders\\ICodeBuilder.cs",
+              "RelativeDocumentMoniker": "Services\\Builders\\ICodeBuilder.cs",
+              "ToolTip": "D:\\ProjectFinal\\Angular_Generate\\Services\\Builders\\ICodeBuilder.cs",
+              "RelativeToolTip": "Services\\Builders\\ICodeBuilder.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAXAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-05T03:20:35.648Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "TypeScriptBuilder.cs",
+              "DocumentMoniker": "D:\\ProjectFinal\\Angular_Generate\\Services\\Builders\\TypeScriptBuilder.cs",
+              "RelativeDocumentMoniker": "Services\\Builders\\TypeScriptBuilder.cs",
+              "ToolTip": "D:\\ProjectFinal\\Angular_Generate\\Services\\Builders\\TypeScriptBuilder.cs",
+              "RelativeToolTip": "Services\\Builders\\TypeScriptBuilder.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAAlAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-30T03:12:53.16Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ComponentDefinition.cs",
+              "DocumentMoniker": "D:\\ProjectFinal\\Angular_Generate\\Models\\ComponentDefinition.cs",
+              "RelativeDocumentMoniker": "Models\\ComponentDefinition.cs",
+              "ToolTip": "D:\\ProjectFinal\\Angular_Generate\\Models\\ComponentDefinition.cs",
+              "RelativeToolTip": "Models\\ComponentDefinition.cs",
+              "ViewState": "AgIAADQAAAAAAAAAAAAAABUAAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-19T02:24:10.066Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "GeneratorController.cs",
+              "DocumentMoniker": "D:\\ProjectFinal\\Angular_Generate\\Controllers\\GeneratorController.cs",
+              "RelativeDocumentMoniker": "Controllers\\GeneratorController.cs",
+              "ToolTip": "D:\\ProjectFinal\\Angular_Generate\\Controllers\\GeneratorController.cs",
+              "RelativeToolTip": "Controllers\\GeneratorController.cs",
+              "ViewState": "AgIAAEMAAAAAAAAAAAAkwA4AAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-19T02:28:03.163Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "D:\\ProjectFinal\\Angular_Generate\\Views\\Generator\\Index.cshtml",
+              "RelativeDocumentMoniker": "Views\\Generator\\Index.cshtml",
+              "ToolTip": "D:\\ProjectFinal\\Angular_Generate\\Views\\Generator\\Index.cshtml",
+              "RelativeToolTip": "Views\\Generator\\Index.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-12-19T02:34:40.319Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "AngularComponentFactory.cs",
+              "DocumentMoniker": "D:\\ProjectFinal\\Angular_Generate\\Services\\AngularComponentFactory.cs",
+              "RelativeDocumentMoniker": "Services\\AngularComponentFactory.cs",
+              "ToolTip": "D:\\ProjectFinal\\Angular_Generate\\Services\\AngularComponentFactory.cs",
+              "RelativeToolTip": "Services\\AngularComponentFactory.cs",
+              "ViewState": "AgIAAB8AAAAAAAAAAAAQwCUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-19T02:25:41.697Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "DbSchemaService.cs",
+              "DocumentMoniker": "D:\\ProjectFinal\\Angular_Generate\\Services\\DbSchemaService.cs",
+              "RelativeDocumentMoniker": "Services\\DbSchemaService.cs",
+              "ToolTip": "D:\\ProjectFinal\\Angular_Generate\\Services\\DbSchemaService.cs",
+              "RelativeToolTip": "Services\\DbSchemaService.cs",
+              "ViewState": "AgIAADYAAAAAAAAAAAAowDAAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-19T04:44:27.852Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "FullStackGenerator.cs",
+              "DocumentMoniker": "D:\\ProjectFinal\\Angular_Generate\\Services\\FullStackGenerator.cs",
+              "RelativeDocumentMoniker": "Services\\FullStackGenerator.cs",
+              "ToolTip": "D:\\ProjectFinal\\Angular_Generate\\Services\\FullStackGenerator.cs",
+              "RelativeToolTip": "Services\\FullStackGenerator.cs",
+              "ViewState": "AgIAADEAAAAAAAAAAAAswC0AAAAeAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-19T02:26:09.524Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "ViewRenderService.cs",
+              "DocumentMoniker": "D:\\ProjectFinal\\Angular_Generate\\Services\\ViewRenderService.cs",
+              "RelativeDocumentMoniker": "Services\\ViewRenderService.cs",
+              "ToolTip": "D:\\ProjectFinal\\Angular_Generate\\Services\\ViewRenderService.cs",
+              "RelativeToolTip": "Services\\ViewRenderService.cs",
+              "ViewState": "AgIAABAAAAAAAAAAAAAQwBMAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-19T02:25:56.779Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\ProjectFinal\\Angular_Generate\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "D:\\ProjectFinal\\Angular_Generate\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-19T02:28:15.36Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "D:\\ProjectFinal\\Angular_Generate\\appsettings.json",
+              "RelativeDocumentMoniker": "appsettings.json",
+              "ToolTip": "D:\\ProjectFinal\\Angular_Generate\\appsettings.json",
+              "RelativeToolTip": "appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-12-19T03:53:51.031Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "Angular_Generate.csproj",
+              "DocumentMoniker": "D:\\ProjectFinal\\Angular_Generate\\Angular_Generate.csproj",
+              "RelativeDocumentMoniker": "Angular_Generate.csproj",
+              "ToolTip": "D:\\ProjectFinal\\Angular_Generate\\Angular_Generate.csproj",
+              "RelativeToolTip": "Angular_Generate.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-12-19T02:23:29.107Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
