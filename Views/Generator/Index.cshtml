@@ -267,21 +267,21 @@
                                                 </label>
                                             </div>
                                             <div class="form-check">
-                                                <input class="form-check-input crud-checkbox" type="checkbox" id="IsGetById" asp-for="IsGetById">
+                                                <input class="form-check-input crud-checkbox" type="checkbox" id="IsGetById" asp-for="IsGetById" onchange="updateGetByIdRequirement()">
                                                 <label class="form-check-label" for="IsGetById">Get By ID</label>
                                             </div>
                                             <div class="form-check">
-                                                <input class="form-check-input crud-checkbox" type="checkbox" id="IsPost" asp-for="IsPost">
+                                                <input class="form-check-input crud-checkbox" type="checkbox" id="IsPost" asp-for="IsPost" onchange="updateGetByIdRequirement()">
                                                 <label class="form-check-label" for="IsPost">Post (Create)</label>
                                             </div>
                                         </div>
                                         <div class="col-6">
                                             <div class="form-check">
-                                                <input class="form-check-input crud-checkbox" type="checkbox" id="IsUpdate" asp-for="IsUpdate">
+                                                <input class="form-check-input crud-checkbox" type="checkbox" id="IsUpdate" asp-for="IsUpdate" onchange="updateGetByIdRequirement()">
                                                 <label class="form-check-label" for="IsUpdate">Update</label>
                                             </div>
                                             <div class="form-check">
-                                                <input class="form-check-input crud-checkbox" type="checkbox" id="IsDelete" asp-for="IsDelete">
+                                                <input class="form-check-input crud-checkbox" type="checkbox" id="IsDelete" asp-for="IsDelete" onchange="updateGetByIdRequirement()">
                                                 <label class="form-check-label" for="IsDelete">Delete</label>
                                             </div>
                                         </div>
@@ -644,6 +644,19 @@
         function toggleAllCrud(source) {
             var checkboxes = document.querySelectorAll('.crud-checkbox');
             checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        // --- Logic: Auto-check GET BY ID when POST/UPDATE/DELETE selected ---
+        function updateGetByIdRequirement() {
+            var isPost = document.getElementById('IsPost').checked;
+            var isUpdate = document.getElementById('IsUpdate').checked;
+            var isDelete = document.getElementById('IsDelete').checked;
+            var getByIdCheckbox = document.getElementById('IsGetById');
+            
+            // ถ้าเลือก POST, UPDATE, หรือ DELETE → บังคับให้ GET BY ID ติ๊กด้วย
+            if (isPost || isUpdate || isDelete) {
+                getByIdCheckbox.checked = true;
+            }
         }
 
         // --- Logic: Copy to Clipboard ---

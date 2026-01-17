@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "MTaVmem45f4=",
+  "dgSpecHash": "ujbnlk4T7lM=",
   "success": true,
-  "projectFilePath": "D:\\ProjectFinal\\Angular_Generate\\Angular_Generate.csproj",
+  "projectFilePath": "D:\\ProjectFinal\\AngularGenerator\\Angular_Generate.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\bp6098b\\.nuget\\packages\\azure.core\\1.47.1\\azure.core.1.47.1.nupkg.sha512",
     "C:\\Users\\bp6098b\\.nuget\\packages\\azure.identity\\1.14.2\\azure.identity.1.14.2.nupkg.sha512",

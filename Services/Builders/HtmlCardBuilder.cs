@@ -1,369 +1,217 @@
-using AngularGenerator.Core.Models;
+﻿using AngularGenerator.Core.Models;
 using System.Text;
 
 namespace AngularGenerator.Services.Builders
 {
     /// <summary>
-    /// Builder สำหรับสร้าง HTML แบบ Card View
+    /// Builder สำหรบสราง HTML แบบ Card View (Grid Layout)
     /// </summary>
     public class HtmlCardBuilder
     {
         private readonly ComponentDefinition _definition;
-        private readonly StringBuilder _html = new();
-
+        private readonly StringBuilder _sb = new();
+        
         public HtmlCardBuilder(ComponentDefinition definition)
         {
             _definition = definition;
         }
-
+        
         public string Build()
         {
-            var framework = _definition.CssFramework;
+            var primaryKey = _definition.PrimaryKeyName;
+            var hasCheckbox = _definition.Fields.Any(f => f.UIControl == ControlType.Checkbox);
             
-            _html.Clear();
-            _html.AppendLine($"<!-- Generated HTML Card View for {_definition.EntityName} Component -->");
-            _html.AppendLine($"<!-- CSS Framework: {framework} -->");
-            _html.AppendLine();
-
-            BuildHeader(framework);
-            BuildLoadingIndicator(framework);
-            BuildCardGrid(framework);
-            BuildModal(framework);
-
-            return _html.ToString();
+            _sb.AppendLine("<div class=\"container\">");
+            BuildHeader();
+            BuildLoadingIndicator();
+            BuildCardGrid(primaryKey, hasCheckbox);
+            BuildModal();
+            _sb.AppendLine("</div>");
+            
+            return _sb.ToString();
         }
-
-        private void BuildHeader(CSSFramework framework)
+        
+        private void BuildHeader()
         {
-            var containerClass = framework switch
-            {
-                CSSFramework.Bootstrap => "container mt-4",
-                CSSFramework.AngularMaterial => "mat-elevation-z2",
-                _ => "card-container"
-            };
-
-            var buttonClass = framework switch
-            {
-                CSSFramework.Bootstrap => "btn btn-primary",
-                CSSFramework.AngularMaterial => "mat-raised-button mat-primary",
-                _ => "btn btn-primary"
-            };
-
-            _html.AppendLine($"<div class=\"{containerClass}\">");
-            _html.AppendLine("  <div class=\"header\">");
-            _html.AppendLine($"    <h2>{_definition.EntityName} Management</h2>");
+            _sb.AppendLine("  <div class=\"header-section\">");
+            _sb.AppendLine($"    <h2>{_definition.EntityName} management</h2>");
+            _sb.AppendLine("    <div class=\"header-actions\">");
+            _sb.AppendLine("      <div class=\"search-wrapper\">");
+            _sb.AppendLine("        <input type=\"text\" class=\"search-box\" placeholder=\"Search...\" ");
+            _sb.AppendLine("               [ngModel]=\"searchTerm()\" (ngModelChange)=\"searchTerm.set($event)\">");
+            _sb.AppendLine("      </div>");
             
             if (_definition.IsPost)
             {
-                _html.AppendLine($"    <button class=\"{buttonClass}\" (click)=\"openCreate()\">");
-                
-                if (framework == CSSFramework.AngularMaterial)
-                    _html.AppendLine("      <mat-icon>add</mat-icon>");
-                
-                _html.AppendLine("      Create New");
-                _html.AppendLine("    </button>");
+                _sb.AppendLine($"      <button class=\"btn btn-add\" (click)=\"openCreate()\">+ New {_definition.EntityName}</button>");
             }
             
-            _html.AppendLine("  </div>");
-            _html.AppendLine();
+            _sb.AppendLine("    </div>");
+            _sb.AppendLine("  </div>");
+            _sb.AppendLine();
         }
-
-        private void BuildLoadingIndicator(CSSFramework framework)
+        
+        private void BuildLoadingIndicator()
         {
-            _html.AppendLine("  <!-- Loading Indicator -->");
-            _html.AppendLine("  @if (isLoading()) {");
-            
-            if (framework == CSSFramework.AngularMaterial)
-            {
-                _html.AppendLine("    <div class=\"loading-container\">");
-                _html.AppendLine("      <mat-spinner></mat-spinner>");
-                _html.AppendLine("    </div>");
-            }
-            else if (framework == CSSFramework.Bootstrap)
-            {
-                _html.AppendLine("    <div class=\"text-center py-5\">");
-                _html.AppendLine("      <div class=\"spinner-border text-primary\" role=\"status\">");
-                _html.AppendLine("        <span class=\"visually-hidden\">Loading...</span>");
-                _html.AppendLine("      </div>");
-                _html.AppendLine("    </div>");
-            }
-            else
-            {
-                _html.AppendLine("    <div class=\"loading-container\">");
-                _html.AppendLine("      <div class=\"spinner\"></div>");
-                _html.AppendLine("    </div>");
-            }
-            
-            _html.AppendLine("  }");
-            _html.AppendLine();
+            _sb.AppendLine("  @if (isLoading() && !showModal()) {");
+            _sb.AppendLine("    <div class=\"loading-state\">");
+            _sb.AppendLine("      <div class=\"spinner\"></div> Loading...");
+            _sb.AppendLine("    </div>");
+            _sb.AppendLine("  }");
+            _sb.AppendLine();
         }
-
-        private void BuildCardGrid(CSSFramework framework)
+        
+        private void BuildCardGrid(string primaryKey, bool hasCheckbox)
         {
-            _html.AppendLine("  <!-- Card Grid -->");
-            _html.AppendLine("  @if (!isLoading()) {");
+            _sb.AppendLine("  @if (!isLoading()) {");
+            _sb.AppendLine("    ");
+            _sb.AppendLine("    <div class=\"product-grid\">");
+            _sb.AppendLine($"      @for (item of filteredList(); track item.{primaryKey}) {{");
+            _sb.AppendLine("        <div class=\"card\" >");
+            _sb.AppendLine("          <div class=\"card-image-wrapper\">");
+            _sb.AppendLine("            <img src=\"https://placehold.co/600x400?text=No+Image\" alt=\"Product\" (click)=\"openDetail(item)\"/>");
             
-            var gridClass = framework switch
+            // Badge สำหรบ checkbox field (ถาม)
+            if (hasCheckbox)
             {
-                CSSFramework.Bootstrap => "row g-4",
-                CSSFramework.AngularMaterial => "card-grid",
-                _ => "card-grid"
-            };
-
-            _html.AppendLine($"    <div class=\"{gridClass}\">");
-            _html.AppendLine();
-
-            _html.AppendLine("      @if (dataList().length === 0) {");
-            
-            if (framework == CSSFramework.AngularMaterial)
-            {
-                _html.AppendLine("        <mat-card class=\"text-center\">");
-                _html.AppendLine("          <mat-card-content>");
-                _html.AppendLine("            <p>No data available</p>");
-                _html.AppendLine("          </mat-card-content>");
-                _html.AppendLine("        </mat-card>");
-            }
-            else if (framework == CSSFramework.Bootstrap)
-            {
-                _html.AppendLine("        <div class=\"col-12 text-center text-muted py-5\">");
-                _html.AppendLine("          <p>No data available</p>");
-                _html.AppendLine("        </div>");
-            }
-            else
-            {
-                _html.AppendLine("        <div class=\"empty-state\">");
-                _html.AppendLine("          <p>No data available</p>");
-                _html.AppendLine("        </div>");
+                var checkboxField = _definition.Fields.FirstOrDefault(f => f.UIControl == ControlType.Checkbox);
+                if (checkboxField != null)
+                {
+                    _sb.AppendLine($"            @if($any(item)['{checkboxField.FieldName}']) {{");
+                    _sb.AppendLine("                <span class=\"badge-color\">Active</span>");
+                    _sb.AppendLine("            }");
+                }
             }
             
-            _html.AppendLine("      }");
-            _html.AppendLine();
-
-            BuildCardItems(framework);
-
-            _html.AppendLine("    </div>");
-            _html.AppendLine("  }");
-            _html.AppendLine("</div>");
-            _html.AppendLine();
+            _sb.AppendLine("          </div>");
+            _sb.AppendLine();
+            _sb.AppendLine("          <div class=\"card-body\">");
+            
+            // Title (ใช field แรกทไมใช PK)
+            var titleField = _definition.Fields.FirstOrDefault(f => !f.IsPrimaryKey);
+            if (titleField != null)
+            {
+                _sb.AppendLine($"            <h3 class=\"card-title\" title=\"{{{{ item.{titleField.FieldName} }}}}\">{{{{ item.{titleField.FieldName} }}}}</h3>");
+            }
+            
+            _sb.AppendLine("            ");
+            _sb.AppendLine("            <div class=\"card-info\">");
+            
+            // แสดง 2 fields ถดไป (ขามcheckbox และ PK)
+            var displayFields = _definition.Fields
+                .Where(f => !f.IsPrimaryKey && f.UIControl != ControlType.Checkbox)
+                .Take(3)
+                .ToList();
+            
+            if (displayFields.Count > 1)
+            {
+                var field1 = displayFields[1];
+                _sb.AppendLine("              <span class=\"price\">");
+                _sb.AppendLine($"                {{{{ item.{field1.FieldName} ? (item.{field1.FieldName} | number:'1.2-2') + ' ฿' : 'N/A' }}}}");
+                _sb.AppendLine("              </span>");
+            }
+            
+            if (displayFields.Count > 2)
+            {
+                var field2 = displayFields[2];
+                _sb.AppendLine($"              <span class=\"stock\">Stock: {{{{ item.{field2.FieldName} }}}}</span>");
+            }
+            
+            _sb.AppendLine("            </div>");
+            _sb.AppendLine("          </div>");
+            _sb.AppendLine();
+            
+            // Card Footer with Actions
+            _sb.AppendLine("          <div class=\"card-footer\">");
+            
+            if (_definition.IsGetById)
+            {
+                _sb.AppendLine($"             <button class=\"btn btn-primary view\" (click)=\"openDetail(item)\" title=\"View\">View</button>");
+            }
+            
+            if (_definition.IsUpdate)
+            {
+                _sb.AppendLine($"             <button class=\"btn btn-warning edit\" (click)=\"openEdit(item)\" title=\"Edit\">Edit</button>");
+            }
+            
+            if (_definition.IsDelete)
+            {
+                _sb.AppendLine($"             <button class=\"btn btn-danger delete\" (click)=\"onDelete(item)\" title=\"Delete\">Delete</button>");
+            }
+            
+            _sb.AppendLine("          </div>");
+            _sb.AppendLine("        </div>");
+            _sb.AppendLine("      }");
+            _sb.AppendLine("    </div>");
+            _sb.AppendLine();
+            _sb.AppendLine("    @if(filteredList().length === 0) {");
+            _sb.AppendLine("        <div class=\"empty-state\">");
+            _sb.AppendLine("            <p>No data found matching your search.</p>");
+            _sb.AppendLine("        </div>");
+            _sb.AppendLine("    }");
+            _sb.AppendLine("  }");
         }
-
-        private void BuildCardItems(CSSFramework framework)
+        
+        private void BuildModal()
         {
-            var primaryKey = _definition.Fields.FirstOrDefault(f => f.IsPrimaryKey)?.FieldName ?? "id";
-
-            _html.AppendLine($"      @for (item of dataList(); track trackByFn($index, item)) {{");
+            if (!_definition.IsPost && !_definition.IsUpdate && !_definition.IsGetById) return;
             
-            if (framework == CSSFramework.Bootstrap)
+            _sb.AppendLine();
+            _sb.AppendLine("@if (showModal()) {");
+            _sb.AppendLine("  <div class=\"modal-backdrop\">");
+            _sb.AppendLine("    <div class=\"modal-content\">");
+            _sb.AppendLine("      <div class=\"modal-header\">");
+            _sb.AppendLine("        <h3>");
+            _sb.AppendLine($"          @if(isViewMode()) {{ {_definition.EntityName} Details }}");
+            _sb.AppendLine($"          @else if(isEditMode()) {{ Edit {_definition.EntityName} }}");
+            _sb.AppendLine($"          @else {{ New {_definition.EntityName} }}");
+            _sb.AppendLine("        </h3>");
+            _sb.AppendLine("        <button class=\"btn-close-icon\" (click)=\"onClose()\"></button>");
+            _sb.AppendLine("      </div>");
+            _sb.AppendLine("      ");
+            _sb.AppendLine($"      <form [formGroup]=\"{_definition.EntityName.ToLower()}Form\" (ngSubmit)=\"onSubmit()\">");
+            _sb.AppendLine("        <div class=\"form-grid\">");
+            _sb.AppendLine("          @for (field of formFields; track field.key) {");
+            _sb.AppendLine("            <div class=\"form-group\" [class.full-width]=\"field.type === 'checkbox'\">");
+            _sb.AppendLine("              <label>{{ field.label }} ");
+            _sb.AppendLine("                @if(field.required && !isViewMode()){ <span class=\"required\">*</span> }");
+            _sb.AppendLine("              </label>");
+            _sb.AppendLine();
+            _sb.AppendLine("              @if (field.type === 'checkbox') {");
+            _sb.AppendLine("                <div class=\"checkbox-wrapper\">");
+            _sb.AppendLine("                  <input type=\"checkbox\" [formControlName]=\"field.key\"> ");
+            _sb.AppendLine("                  <span>Yes / No</span>");
+            _sb.AppendLine("                </div>");
+            _sb.AppendLine("              } @else {");
+            _sb.AppendLine("                <input [type]=\"field.type\" ");
+            _sb.AppendLine("                       [formControlName]=\"field.key\" ");
+            _sb.AppendLine("                       class=\"form-control\"");
+            _sb.AppendLine($"                       [class.is-invalid]=\"{_definition.EntityName.ToLower()}Form.get(field.key)?.invalid && {_definition.EntityName.ToLower()}Form.get(field.key)?.touched\">");
+            _sb.AppendLine("              }");
+            _sb.AppendLine("            </div>");
+            _sb.AppendLine("          }");
+            _sb.AppendLine("        </div>");
+            _sb.AppendLine();
+            _sb.AppendLine("        <div class=\"modal-actions\">");
+            _sb.AppendLine("          <button type=\"button\" class=\"btn btn-secondary\" (click)=\"onClose()\">Cancel</button>");
+            
+            if (_definition.IsGetById)
             {
-                _html.AppendLine("        <div class=\"col-md-4\">");
-                _html.AppendLine("          <div class=\"card h-100\">");
-                _html.AppendLine("            <div class=\"card-header\">");
-                _html.AppendLine($"              <h5 class=\"card-title\">{{{{ item.{_definition.Fields.FirstOrDefault()?.FieldName ?? "name"} }}}}</h5>");
-                _html.AppendLine("            </div>");
-                _html.AppendLine("            <div class=\"card-body\">");
-                
-                foreach (var field in _definition.Fields.Where(f => !f.IsPrimaryKey).Take(5))
-                {
-                    _html.AppendLine($"              <p><strong>{field.Label}:</strong> {{{{ item.{field.FieldName} }}}}</p>");
-                }
-                
-                _html.AppendLine("            </div>");
-                _html.AppendLine("            <div class=\"card-footer d-flex gap-2\">");
-                
-                if (_definition.IsUpdate)
-                {
-                    _html.AppendLine("              <button class=\"btn btn-sm btn-warning\" (click)=\"onEdit(item)\">");
-                    _html.AppendLine("                Edit");
-                    _html.AppendLine("              </button>");
-                }
-                
-                if (_definition.IsDelete)
-                {
-                    _html.AppendLine($"              <button class=\"btn btn-sm btn-danger\" (click)=\"onDelete(item.{primaryKey})\">");
-                    _html.AppendLine("                Delete");
-                    _html.AppendLine("              </button>");
-                }
-                
-                _html.AppendLine("            </div>");
-                _html.AppendLine("          </div>");
-                _html.AppendLine("        </div>");
-            }
-            else if (framework == CSSFramework.AngularMaterial)
-            {
-                _html.AppendLine("        <mat-card class=\"card-item\">");
-                _html.AppendLine("          <mat-card-header>");
-                _html.AppendLine($"            <mat-card-title>{{{{ item.{_definition.Fields.FirstOrDefault()?.FieldName ?? "name"} }}}}</mat-card-title>");
-                _html.AppendLine("          </mat-card-header>");
-                _html.AppendLine("          <mat-card-content>");
-                
-                foreach (var field in _definition.Fields.Where(f => !f.IsPrimaryKey).Take(5))
-                {
-                    _html.AppendLine("            <div class=\"field-row\">");
-                    _html.AppendLine($"              <strong>{field.Label}:</strong> {{{{ item.{field.FieldName} }}}}");
-                    _html.AppendLine("            </div>");
-                }
-                
-                _html.AppendLine("          </mat-card-content>");
-                _html.AppendLine("          <mat-card-actions>");
-                
-                if (_definition.IsUpdate)
-                {
-                    _html.AppendLine("            <button mat-button color=\"primary\" (click)=\"onEdit(item)\">Edit</button>");
-                }
-                
-                if (_definition.IsDelete)
-                {
-                    _html.AppendLine($"            <button mat-button color=\"warn\" (click)=\"onDelete(item.{primaryKey})\">Delete</button>");
-                }
-                
-                _html.AppendLine("          </mat-card-actions>");
-                _html.AppendLine("        </mat-card>");
-            }
-            else // BasicCSS
-            {
-                _html.AppendLine("        <div class=\"card-item\">");
-                _html.AppendLine("          <div class=\"card-header\">");
-                _html.AppendLine($"            <h3 class=\"card-title\">{{{{ item.{_definition.Fields.FirstOrDefault()?.FieldName ?? "name"} }}}}</h3>");
-                _html.AppendLine("          </div>");
-                _html.AppendLine("          <div class=\"card-body\">");
-                
-                foreach (var field in _definition.Fields.Where(f => !f.IsPrimaryKey).Take(5))
-                {
-                    _html.AppendLine("            <div class=\"card-field\">");
-                    _html.AppendLine($"              <span class=\"card-field-label\">{field.Label}:</span>");
-                    _html.AppendLine($"              <span class=\"card-field-value\">{{{{ item.{field.FieldName} }}}}</span>");
-                    _html.AppendLine("            </div>");
-                }
-                
-                _html.AppendLine("          </div>");
-                _html.AppendLine("          <div class=\"card-actions\">");
-                
-                if (_definition.IsUpdate)
-                {
-                    _html.AppendLine("            <button class=\"btn btn-warning btn-sm\" (click)=\"onEdit(item)\">Edit</button>");
-                }
-                
-                if (_definition.IsDelete)
-                {
-                    _html.AppendLine($"            <button class=\"btn btn-danger btn-sm\" (click)=\"onDelete(item.{primaryKey})\">Delete</button>");
-                }
-                
-                _html.AppendLine("          </div>");
-                _html.AppendLine("        </div>");
+                _sb.AppendLine("            @if (isViewMode()) {");
+                _sb.AppendLine("              <button type=\"button\" class=\"btn btn-warning edit\" (click)=\"enableEditMode()\">");
+                _sb.AppendLine("                Edit");
+                _sb.AppendLine("              </button>");
+                _sb.AppendLine("          }");
             }
             
-            _html.AppendLine("      }");
-        }
-
-        private void BuildModal(CSSFramework framework)
-        {
-            if (!_definition.IsPost && !_definition.IsUpdate) return;
-
-            _html.AppendLine("  <!-- Modal for Create/Update -->");
-            _html.AppendLine("  @if (showModal()) {");
-            
-            if (framework == CSSFramework.AngularMaterial)
-            {
-                BuildMaterialModal();
-            }
-            else if (framework == CSSFramework.Bootstrap)
-            {
-                BuildBootstrapModal();
-            }
-            else
-            {
-                BuildBasicModal();
-            }
-            
-            _html.AppendLine("  }");
-        }
-
-        private void BuildBootstrapModal()
-        {
-            _html.AppendLine("    <div class=\"modal d-block\" tabindex=\"-1\" style=\"background-color: rgba(0,0,0,0.5);\">");
-            _html.AppendLine("      <div class=\"modal-dialog\">");
-            _html.AppendLine("        <div class=\"modal-content\">");
-            _html.AppendLine("          <div class=\"modal-header\">");
-            _html.AppendLine("            <h5 class=\"modal-title\">{{ isEditMode() ? 'Edit' : 'Create' }} {_definition.EntityName}</h5>");
-            _html.AppendLine("            <button type=\"button\" class=\"btn-close\" (click)=\"closeModal()\"></button>");
-            _html.AppendLine("          </div>");
-            _html.AppendLine("          <form [formGroup]=\"form\" (ngSubmit)=\"onSubmit()\">");
-            _html.AppendLine("            <div class=\"modal-body\">");
-            
-            foreach (var field in _definition.Fields.Where(f => !f.IsPrimaryKey))
-            {
-                _html.AppendLine("              <div class=\"mb-3\">");
-                _html.AppendLine($"                <label class=\"form-label\">{field.Label}</label>");
-                _html.AppendLine($"                <input formControlName=\"{field.FieldName}\" class=\"form-control\" />");
-                _html.AppendLine("              </div>");
-            }
-            
-            _html.AppendLine("            </div>");
-            _html.AppendLine("            <div class=\"modal-footer\">");
-            _html.AppendLine("              <button type=\"button\" class=\"btn btn-secondary\" (click)=\"closeModal()\">Cancel</button>");
-            _html.AppendLine("              <button type=\"submit\" class=\"btn btn-primary\" [disabled]=\"form.invalid\">Save</button>");
-            _html.AppendLine("            </div>");
-            _html.AppendLine("          </form>");
-            _html.AppendLine("        </div>");
-            _html.AppendLine("      </div>");
-            _html.AppendLine("    </div>");
-        }
-
-        private void BuildMaterialModal()
-        {
-            _html.AppendLine("    <div class=\"modal-overlay\">");
-            _html.AppendLine("      <mat-card class=\"modal-card\">");
-            _html.AppendLine("        <mat-card-header>");
-            _html.AppendLine("          <mat-card-title>{{ isEditMode() ? 'Edit' : 'Create' }} {_definition.EntityName}</mat-card-title>");
-            _html.AppendLine("        </mat-card-header>");
-            _html.AppendLine("        <mat-card-content>");
-            _html.AppendLine("          <form [formGroup]=\"form\" (ngSubmit)=\"onSubmit()\">");
-            
-            foreach (var field in _definition.Fields.Where(f => !f.IsPrimaryKey))
-            {
-                _html.AppendLine("            <mat-form-field appearance=\"outline\" class=\"w-100\">");
-                _html.AppendLine($"              <mat-label>{field.Label}</mat-label>");
-                _html.AppendLine($"              <input matInput formControlName=\"{field.FieldName}\" />");
-                _html.AppendLine("            </mat-form-field>");
-            }
-            
-            _html.AppendLine("          </form>");
-            _html.AppendLine("        </mat-card-content>");
-            _html.AppendLine("        <mat-card-actions>");
-            _html.AppendLine("          <button mat-button (click)=\"closeModal()\">Cancel</button>");
-            _html.AppendLine("          <button mat-raised-button color=\"primary\" (click)=\"onSubmit()\" [disabled]=\"form.invalid\">Save</button>");
-            _html.AppendLine("        </mat-card-actions>");
-            _html.AppendLine("      </mat-card>");
-            _html.AppendLine("    </div>");
-        }
-
-        private void BuildBasicModal()
-        {
-            _html.AppendLine("    <div class=\"modal-overlay\">");
-            _html.AppendLine("      <div class=\"modal-content\">");
-            _html.AppendLine("        <div class=\"modal-header\">");
-            _html.AppendLine("          <h3 class=\"modal-title\">{{ isEditMode() ? 'Edit' : 'Create' }} {_definition.EntityName}</h3>");
-            _html.AppendLine("          <button class=\"modal-close\" (click)=\"closeModal()\">&times;</button>");
-            _html.AppendLine("        </div>");
-            _html.AppendLine("        <form [formGroup]=\"form\" (ngSubmit)=\"onSubmit()\">");
-            _html.AppendLine("          <div class=\"modal-body\">");
-            
-            foreach (var field in _definition.Fields.Where(f => !f.IsPrimaryKey))
-            {
-                _html.AppendLine("            <div class=\"form-group\">");
-                _html.AppendLine($"              <label class=\"form-label\">{field.Label}</label>");
-                _html.AppendLine($"              <input formControlName=\"{field.FieldName}\" class=\"form-control\" />");
-                _html.AppendLine("            </div>");
-            }
-            
-            _html.AppendLine("          </div>");
-            _html.AppendLine("          <div class=\"modal-footer\">");
-            _html.AppendLine("            <button type=\"button\" class=\"btn\" (click)=\"closeModal()\">Cancel</button>");
-            _html.AppendLine("            <button type=\"submit\" class=\"btn btn-primary\" [disabled]=\"form.invalid\">Save</button>");
-            _html.AppendLine("          </div>");
-            _html.AppendLine("        </form>");
-            _html.AppendLine("      </div>");
-            _html.AppendLine("    </div>");
+            _sb.AppendLine("          @if(!isViewMode()) {");
+            _sb.AppendLine($"            <button type=\"submit\" class=\"btn btn-success\" [disabled]=\"{_definition.EntityName.ToLower()}Form.invalid\">Save</button>");
+            _sb.AppendLine("          }");
+            _sb.AppendLine("        </div>");
+            _sb.AppendLine("      </form>");
+            _sb.AppendLine("    </div>");
+            _sb.AppendLine("  </div>");
+            _sb.AppendLine("}");
         }
     }
 }
