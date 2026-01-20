@@ -163,7 +163,6 @@ namespace AngularGenerator.Services.Builders
             });
             
             // Computed filtered list
-            var searchableFields = string.Join(", ", _definition.Fields.Where(f => !f.IsPrimaryKey).Select(f => f.FieldName));
             var filterLogic = new List<string>
             {
                 "let data = [...this.dataList()];",
@@ -171,14 +170,12 @@ namespace AngularGenerator.Services.Builders
                 "const col = this.sortColumn();",
                 "const dir = this.sortDirection();",
                 "",
-                $"// 1. Search (ค้นหาจากทุกฟิลด์: {searchableFields})",
                 "if (term) {",
+                $"  const firstFieldKey = this.formFields[0].key as keyof {_definition.EntityName}Model;",
                 "  data = data.filter(item => {",
-                "    return this.formFields.some(field => {",
-                "      const val = (item as any)[field.key];",
+                "      const val = item[firstFieldKey];",
                 "      return val ? String(val).toLowerCase().includes(term) : false;",
                 "    });",
-                "  });",
                 "}",
                 "",
                 "// 2. Sort",
@@ -334,38 +331,58 @@ namespace AngularGenerator.Services.Builders
                 });
             }
             
-            // openEdit method - รับ item มาเลย สำหรับ Card View
+            // openEdit method - รับ item มาเลย
             AddMethod(new MethodSegment
             {
                 Name = "openEdit",
-                Parameters = new List<string> { "item: any" },
+                Parameters = new List<string> { $"item: {_definition.EntityName}Model" },
                 ReturnType = "void",
+                AccessModifier = "public",
                 BodyLines = new List<string>
                 {
-                    "this.isViewMode.set(false);",
-                    "this.isEditMode.set(true);",
-                    $"this.{_definition.EntityName.ToLower()}Form.enable();",
-                    $"this.{_definition.EntityName.ToLower()}Form.patchValue(item);",
-                    "this.showModal.set(true);"
-                },
-                AccessModifier = "public"
+                    "this.isLoading.set(true);",
+                    $"this.service.getById(item.{_definition.PrimaryKeyName}).subscribe({{", 
+                    "  next: (data) => {",
+                    "    this.isViewMode.set(false);",
+                    "    this.isEditMode.set(true);",
+                    $"    this.{_definition.EntityName.ToLower()}Form.enable();",
+                    $"    this.{_definition.EntityName.ToLower()}Form.patchValue(data);",
+                    "    this.showModal.set(true);",
+                    "    this.isLoading.set(false);",
+                    "  },",
+                    "  error: (err) => {",
+                    "    alert(err.message);",
+                    "    this.isLoading.set(false);",
+                    "  }",
+                    "});"
+                }
             });
             
             // openDetail method - รับ item มาเลย สำหรับ Card View
             AddMethod(new MethodSegment
             {
-                Name = "openDetail",
-                Parameters = new List<string> { "item: any" },
+                 Name = "openDetail",
+                Parameters = new List<string> { $"item: {_definition.EntityName}Model" },
                 ReturnType = "void",
+                AccessModifier = "public",
                 BodyLines = new List<string>
                 {
-                    "this.isViewMode.set(true);",
-                    "this.isEditMode.set(false);",
-                    $"this.{_definition.EntityName.ToLower()}Form.patchValue(item);",
-                    $"this.{_definition.EntityName.ToLower()}Form.disable();",
-                    "this.showModal.set(true);"
-                },
-                AccessModifier = "public"
+                    "this.isLoading.set(true);",
+                    $"this.service.getById(item.{_definition.PrimaryKeyName}).subscribe({{", 
+                    "  next: (data) => {",
+                    "    this.isViewMode.set(false);",
+                    "    this.isEditMode.set(true);",
+                    $"    this.{_definition.EntityName.ToLower()}Form.enable();",
+                    $"    this.{_definition.EntityName.ToLower()}Form.patchValue(data);",
+                    "    this.showModal.set(true);",
+                    "    this.isLoading.set(false);",
+                    "  },",
+                    "  error: (err) => {",
+                    "    alert(err.message);",
+                    "    this.isLoading.set(false);",
+                    "  }",
+                    "});"
+                }
             });
             
             // enableEditMode method - สลับจาก View เป็น Edit Mode
@@ -448,7 +465,7 @@ namespace AngularGenerator.Services.Builders
                 ReturnType = "void",
                 BodyLines = new List<string>
                 {
-                    $"if (confirm(`Delete ID: ${{item.{_definition.PrimaryKeyName}}}?`)) {{",
+                    $"if (confirm(`ต้องการลบ ID : ${{item.{_definition.PrimaryKeyName}}} ใช่หรือไม่`)) {{",
                     $"  this.service.delete(item.{_definition.PrimaryKeyName}).subscribe({{",
                     "    next: () => this.loadData(),",
                     "    error: (err) => alert('Cannot delete: ' + err.message)",

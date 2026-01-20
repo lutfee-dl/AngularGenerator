@@ -198,7 +198,7 @@ namespace AngularGenerator.Services.Builders
             if (_definition.IsGetById)
             {
                 _sb.AppendLine("            @if (isViewMode()) {");
-                _sb.AppendLine("              <button type=\"button\" class=\"btn btn-warning edit\" (click)=\"enableEditMode()\">");
+                _sb.AppendLine("              <button type=\"button\" class=\"btn btn-edit\" (click)=\"enableEditMode()\">");
                 _sb.AppendLine("                Edit");
                 _sb.AppendLine("              </button>");
                 _sb.AppendLine("          }");

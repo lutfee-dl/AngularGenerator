@@ -304,8 +304,12 @@ namespace AngularGenerator.Services.Builders
             sb.AppendLine("            </button>");
             sb.AppendLine();
             sb.AppendLine("            @if(!isViewMode()) {");
+            sb.AppendLine("              <button type=\"button\" class=\"btn btn-sm btn-edit\" (click)=\"enableEditMode()\">Edit</button>");
+            sb.AppendLine("            }");
+            sb.AppendLine();
+            sb.AppendLine("            @if(!isViewMode()) {");
             sb.AppendLine($"              <button type=\"submit\" class=\"btn btn-success\" [disabled]=\"{_definition.EntityName.ToLower()}Form.invalid\">");
-            sb.AppendLine("                {{ isEditMode() ? 'Update' : 'Save' }}");
+            sb.AppendLine("                {{ isEditMode() ? 'Update' : 'Create' }}");
             sb.AppendLine("              </button>");
             sb.AppendLine("            }");
             sb.AppendLine("          </div>");

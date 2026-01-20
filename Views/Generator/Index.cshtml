@@ -220,7 +220,7 @@
                                 <label class="form-label fw-bold">Component Name</label>
                                 <input type="text" name="componentName" class="form-control"
                                        placeholder="Auto-generated if empty (e.g. Products)"
-                                       value="@(Model?.EntityName != null && Model.EntityName != ViewBag.LastTableName ? Model.EntityName : "")">
+                                       value="@(Model?.EntityName != null && Model.EntityName != ViewBag.LastTableName ? Model?.EntityName : "")">
                             </div>
 
                             <!-- Report/CRUD Mode Selection -->
@@ -348,7 +348,7 @@
                                                value="Bootstrap" @(selectedFramework == "Bootstrap" ? "checked" : "")>
                                         <label class="form-check-label" for="cssBootstrap">
                                             <i class="fab fa-bootstrap"></i> Bootstrap 5
-                                            <small class="text-muted d-block">ใช้ Bootstrap classes (Default)</small>
+                                            <small class="text-muted d-block">ใช้ Bootstrap classes</small>
                                         </label>
                                     </div>
                                     <div class="form-check">
@@ -453,7 +453,7 @@
 
                     <div class="card card-result shadow-sm h-100" style="margin-bottom: 10px;">
                         <div class="card-header">
-                            <span>ผลลัพธ์</span>
+                            <span>ผลลัพธ์ @Model?.EntityName</span>
                             @if (Model != null && !string.IsNullOrEmpty(Model.GeneratedHtml))
                             {
                                 <div class="d-inline-block ms-3">

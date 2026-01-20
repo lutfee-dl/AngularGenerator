@@ -107,6 +107,35 @@ namespace AngularGenerator.Services.Builders
             _css.AppendLine("}");
             _css.AppendLine();
 
+            _css.AppendLine(".table th:last-child {");
+            _css.AppendLine(" position: sticky;");
+            _css.AppendLine(" right: 0;");
+            _css.AppendLine(" background-color: #f8f9fa;");
+            _css.AppendLine(" z-index: 2;");
+            _css.AppendLine(" box-shadow: -2px 0 5px rgba(0,0,0,0.05);");
+            _css.AppendLine("}");
+            _css.AppendLine();
+
+            _css.AppendLine(".table td:last-child {");
+            _css.AppendLine(" position: sticky;");
+            _css.AppendLine(" right: 0;");
+            _css.AppendLine(" background-color: #fff;");
+            _css.AppendLine(" z-index: 1;");
+            _css.AppendLine(" box-shadow: -2px 0 5px rgba(0,0,0,0.05);");
+            _css.AppendLine("}");
+            _css.AppendLine();
+
+            _css.AppendLine(".table tbody tr:nth-child(even) td:last-child {");
+            _css.AppendLine(" background-color: #f2f2f2;");
+            _css.AppendLine("}");
+            _css.AppendLine();
+
+            _css.AppendLine(".action-col{");
+            _css.AppendLine("  min-width: 180px;");
+            _css.AppendLine("  white-space: nowrap;");
+            _css.AppendLine("}");
+            _css.AppendLine();
+
             return this;
         }
 
