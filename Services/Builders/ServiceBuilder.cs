@@ -22,9 +22,9 @@ namespace AngularGenerator.Services.Builders
         private void InitializeDefaults()
         {
             AddImport(new[] { "Injectable", "inject" }, "@angular/core");
-            AddImport(new[] { "HttpClient" }, "@angular/common/http");
-            AddImport(new[] { "Observable" }, "rxjs");
-            AddImport(new[] { "map" }, "rxjs/operators");
+            AddImport(new[] { "HttpClient", "HttpErrorResponse" }, "@angular/common/http");
+            AddImport(new[] { "Observable", "throwError" }, "rxjs");
+            AddImport(new[] { "map", "catchError" }, "rxjs/operators");
         }
         
         public ServiceBuilder AddImport(string[] items, string from)
@@ -41,19 +41,16 @@ namespace AngularGenerator.Services.Builders
         
         public ServiceBuilder WithGetAll()
         {
-            var pkCamelCase = char.ToLower(_definition.PrimaryKeyName[0]) + _definition.PrimaryKeyName.Substring(1);
+            var entityLower = _definition.EntityName.ToLower();
             _methods.Add(new MethodSegment
             {
                 Name = "getAll",
                 ReturnType = $"Observable<{_definition.EntityName}Model[]>",
                 BodyLines = new List<string>
                 {
-                    $"return this.http.get<any[]>(`${{this.baseUrl}}/{_definition.EntityName.ToLower()}`).pipe(",
-                    "  map(data => data.map(item => ({",
-                    "    ...item,",
-                    $"    // ป้องกัน Error NG0955: ถ้า {pkCamelCase} ไม่มีค่า ให้ลองดึงจาก {_definition.PrimaryKeyName} หรือใช้ index แทน",
-                    $"    {pkCamelCase}: item.{pkCamelCase} || item.{_definition.PrimaryKeyName} || Math.random()",
-                    "  })))",
+                    $"return this.http.get<{_definition.EntityName}Model[]>(`${{this.baseUrl}}/{entityLower}`).pipe(",
+                    $"  map((data) => data.map((item) => this.map{_definition.PrimaryKeyName}(item))),",
+                    "  catchError(this.handleError),",
                     ");"
                 }
             });
@@ -62,20 +59,17 @@ namespace AngularGenerator.Services.Builders
         
         public ServiceBuilder WithGetById()
         {
-            var pkCamelCase = char.ToLower(_definition.PrimaryKeyName[0]) + _definition.PrimaryKeyName.Substring(1);
+            var entityLower = _definition.EntityName.ToLower();
             _methods.Add(new MethodSegment
             {
                 Name = "getById",
-                Parameters = new List<string> { "id: any" },
+                Parameters = new List<string> { "id: string | number" },
                 ReturnType = $"Observable<{_definition.EntityName}Model>",
                 BodyLines = new List<string>
                 {
-                    $"return this.http.get<any>(`${{this.baseUrl}}/{_definition.EntityName.ToLower()}/${{id}}`).pipe(",
-                    "  map(item => ({",
-                    "    ...item,",
-                    $"    // ป้องกัน Error NG0955: ถ้า {pkCamelCase} ไม่มีค่า ให้ลองดึงจาก {_definition.PrimaryKeyName} หรือใช้ index แทน",
-                    $"    {pkCamelCase}: item.{pkCamelCase} || item.{_definition.PrimaryKeyName} || Math.random()",
-                    "  }))",
+                    $"return this.http.get<{_definition.EntityName}Model>(`${{this.baseUrl}}/{entityLower}/${{id}}`).pipe(",
+                    $"  map((item) => this.map{_definition.PrimaryKeyName}(item)),",
+                    "  catchError(this.handleError),",
                     ");"
                 }
             });
@@ -84,6 +78,7 @@ namespace AngularGenerator.Services.Builders
         
         public ServiceBuilder WithCreate()
         {
+            var entityLower = _definition.EntityName.ToLower();
             _methods.Add(new MethodSegment
             {
                 Name = "create",
@@ -91,7 +86,9 @@ namespace AngularGenerator.Services.Builders
                 ReturnType = $"Observable<{_definition.EntityName}Model>",
                 BodyLines = new List<string>
                 {
-                    $"return this.http.post<{_definition.EntityName}Model>(`${{this.baseUrl}}/{_definition.EntityName.ToLower()}`, data);"
+                    "return this.http",
+                    $"  .post<{_definition.EntityName}Model>(`${{this.baseUrl}}/{entityLower}`, data)",
+                    "  .pipe(catchError(this.handleError));"
                 }
             });
             return this;
@@ -99,14 +96,17 @@ namespace AngularGenerator.Services.Builders
         
         public ServiceBuilder WithUpdate()
         {
+            var entityLower = _definition.EntityName.ToLower();
             _methods.Add(new MethodSegment
             {
                 Name = "update",
-                Parameters = new List<string> { "id: any", $"data: {_definition.EntityName}Model" },
+                Parameters = new List<string> { "id: string | number", $"data: {_definition.EntityName}Model" },
                 ReturnType = $"Observable<{_definition.EntityName}Model>",
                 BodyLines = new List<string>
                 {
-                    $"return this.http.put<{_definition.EntityName}Model>(`${{this.baseUrl}}/{_definition.EntityName.ToLower()}/${{id}}`, data);"
+                    "return this.http",
+                    $"  .put<{_definition.EntityName}Model>(`${{this.baseUrl}}/{entityLower}/${{id}}`, data)",
+                    "  .pipe(catchError(this.handleError));"
                 }
             });
             return this;
@@ -114,14 +114,17 @@ namespace AngularGenerator.Services.Builders
         
         public ServiceBuilder WithDelete()
         {
+            var entityLower = _definition.EntityName.ToLower();
             _methods.Add(new MethodSegment
             {
                 Name = "delete",
-                Parameters = new List<string> { "id: any" },
+                Parameters = new List<string> { "id: string | number" },
                 ReturnType = "Observable<void>",
                 BodyLines = new List<string>
                 {
-                    $"return this.http.delete<void>(`${{this.baseUrl}}/{_definition.EntityName.ToLower()}/${{id}}`);"
+                    "return this.http",
+                    $"  .delete<void>(`${{this.baseUrl}}/{entityLower}/${{id}}`)",
+                    "  .pipe(catchError(this.handleError));"
                 }
             });
             return this;
@@ -162,12 +165,34 @@ namespace AngularGenerator.Services.Builders
             sb.AppendLine($"  private baseUrl = '{_baseUrl}';");
             sb.AppendLine();
             
-            // Methods
+            // Public Methods
             foreach (var method in _methods)
             {
                 sb.AppendLine(method.Build(1));
                 sb.AppendLine();
             }
+            
+            // Private Helper Methods
+            sb.AppendLine($"  private map{_definition.PrimaryKeyName}(item: {_definition.EntityName}Model): {_definition.EntityName}Model {{");
+            sb.AppendLine("    return {");
+            sb.AppendLine("      ...item,");
+            sb.AppendLine($"      {_definition.PrimaryKeyName}: item.{_definition.PrimaryKeyName},");
+            sb.AppendLine("    };");
+            sb.AppendLine("  }");
+            sb.AppendLine();
+            
+            sb.AppendLine("  private handleError(error: HttpErrorResponse) {");
+            sb.AppendLine("    let errorMessage = 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ กรุณาลองใหม่อีกครั้ง';");
+            sb.AppendLine();
+            sb.AppendLine("    if (error.status === 0) {");
+            sb.AppendLine("      errorMessage = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบอินเทอร์เน็ต';");
+            sb.AppendLine("    } else if (error.status === 404) {");
+            sb.AppendLine("      errorMessage = 'ไม่พบข้อมูลที่ต้องการ';");
+            sb.AppendLine("    } else if (error.status === 500) {");
+            sb.AppendLine("      errorMessage = 'เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้งในภายหลัง';");
+            sb.AppendLine("    }");
+            sb.AppendLine("    return throwError(() => new Error(errorMessage));");
+            sb.AppendLine("  }");
             
             sb.AppendLine("}");
             

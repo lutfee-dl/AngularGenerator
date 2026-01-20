@@ -6,11 +6,11 @@ namespace AngularGenerator.Services.Builders
     /// <summary>
     /// Builder for Table View HTML with support for multiple CSS frameworks
     /// </summary>
-    public class HtmlBuilder
+    public class HtmlTableBuilder
     {
         private readonly ComponentDefinition _definition;
         
-        public HtmlBuilder(ComponentDefinition definition)
+        public HtmlTableBuilder(ComponentDefinition definition)
         {
             _definition = definition;
         }
@@ -172,13 +172,13 @@ namespace AngularGenerator.Services.Builders
             if (_definition.IsGet && _definition.IsGetById)
             {
                 var btnClass = framework == CSSFramework.Bootstrap ? "btn btn-sm btn-info" : "btn btn-sm btn-info";
-                sb.AppendLine($"                <button class=\"{btnClass}\" (click)=\"openDetail(item.{primaryKey})\">View</button>");
+                sb.AppendLine($"                <button class=\"{btnClass}\" (click)=\"openDetail(item)\">View</button>");
             }
             
             if (_definition.IsUpdate)
             {
                 var btnClass = framework == CSSFramework.Bootstrap ? "btn btn-sm btn-warning" : "btn btn-sm btn-edit";
-                sb.AppendLine($"                <button class=\"{btnClass}\" (click)=\"openEdit(item.{primaryKey})\">Edit</button>");
+                sb.AppendLine($"                <button class=\"{btnClass}\" (click)=\"openEdit(item)\">Edit</button>");
             }
             
             if (_definition.IsDelete)

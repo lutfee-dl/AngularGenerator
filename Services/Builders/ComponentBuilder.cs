@@ -119,7 +119,7 @@ namespace AngularGenerator.Services.Builders
             }
             else // TableView
             {
-                var tableBuilder = new HtmlBuilder(_definition);
+                var tableBuilder = new HtmlTableBuilder(_definition);
                 return tableBuilder.Build();
             }
         }

@@ -550,18 +550,15 @@ namespace AngularGenerator.Services.Builders
                 ReturnType = "any",
                 BodyLines = new List<string>
                 {
-                    "// ลองหา field ตามชื่อที่ระบุก่อน (camelCase)",
                     "if (fieldName in item) {",
                     "  return (item as any)[fieldName];",
                     "}",
                     "",
-                    "// ถ้าไม่เจอ ลอง PascalCase (ตัวแรกเป็นตัวใหญ่)",
                     "const pascalCase = fieldName.charAt(0).toUpperCase() + fieldName.slice(1);",
                     "if (pascalCase in item) {",
                     "  return (item as any)[pascalCase];",
                     "}",
                     "",
-                    "// ไม่เจอเลย ลอง lowercase ทั้งหมด",
                     "const lowerCase = fieldName.toLowerCase();",
                     "const found = Object.keys(item).find(key => key.toLowerCase() === lowerCase);",
                     "return found ? (item as any)[found] : undefined;"
