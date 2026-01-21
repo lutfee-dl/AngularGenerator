@@ -11,7 +11,8 @@ namespace AngularGenerator.Services.Builders
         private readonly ComponentDefinition _definition;
         private readonly List<ImportSegment> _imports = new();
         private readonly List<MethodSegment> _methods = new();
-        private string _baseUrl = "/api";
+        private string _baseUrl = "http://localhost:3000/api/products";
+        private string _endpoint = "";
         
         public ServiceBuilder(ComponentDefinition definition)
         {
@@ -25,6 +26,11 @@ namespace AngularGenerator.Services.Builders
             AddImport(new[] { "HttpClient", "HttpErrorResponse" }, "@angular/common/http");
             AddImport(new[] { "Observable", "throwError" }, "rxjs");
             AddImport(new[] { "map", "catchError" }, "rxjs/operators");
+            
+            if (_definition.SeparateInterface)
+            {
+                AddImport(new[] { $"{_definition.EntityName}Model" }, $"./{_definition.EntityName.ToLower()}.interface");
+            }
         }
         
         public ServiceBuilder AddImport(string[] items, string from)
@@ -33,22 +39,55 @@ namespace AngularGenerator.Services.Builders
             return this;
         }
         
-        public ServiceBuilder WithBaseUrl(string baseUrl)
+        public ServiceBuilder WithBaseUrl(string apiBaseUrl)
         {
-            _baseUrl = baseUrl;
+            
+            if (string.IsNullOrEmpty(apiBaseUrl))
+            {
+                _baseUrl = "http://localhost:3000/api";
+                _endpoint = "";
+                return this;
+            }
+            
+            var startBrace = apiBaseUrl.IndexOf('{');
+            var endBrace = apiBaseUrl.IndexOf('}');
+            
+            if (startBrace >= 0 && endBrace > startBrace)
+            {
+                _endpoint = apiBaseUrl.Substring(startBrace + 1, endBrace - startBrace - 1);
+                _baseUrl = apiBaseUrl.Substring(0, startBrace).TrimEnd('/');
+            }
+            else
+            {
+                var trimmedUrl = apiBaseUrl.TrimEnd('/');
+                var lastSlashIndex = trimmedUrl.LastIndexOf('/');
+                
+                if (lastSlashIndex > 0)
+                {
+                    _endpoint = trimmedUrl.Substring(lastSlashIndex + 1);
+                    _baseUrl = trimmedUrl.Substring(0, lastSlashIndex);
+                }
+                else
+                {
+                    _baseUrl = trimmedUrl;
+                    _endpoint = "";
+                }
+            }
+            
             return this;
         }
         
         public ServiceBuilder WithGetAll()
         {
-            var entityLower = _definition.EntityName.ToLower();
+            var apiPath = !string.IsNullOrEmpty(_endpoint) ? _endpoint : _definition.EntityName.ToLower();
+            
             _methods.Add(new MethodSegment
             {
                 Name = "getAll",
                 ReturnType = $"Observable<{_definition.EntityName}Model[]>",
                 BodyLines = new List<string>
                 {
-                    $"return this.http.get<{_definition.EntityName}Model[]>(`${{this.baseUrl}}/{entityLower}`).pipe(",
+                    $"return this.http.get<{_definition.EntityName}Model[]>(`${{this.baseUrl}}/{apiPath}`).pipe(",
                     $"  map((data) => data.map((item) => this.map{_definition.PrimaryKeyName}(item))),",
                     "  catchError(this.handleError),",
                     ");"
@@ -59,7 +98,8 @@ namespace AngularGenerator.Services.Builders
         
         public ServiceBuilder WithGetById()
         {
-            var entityLower = _definition.EntityName.ToLower();
+            var apiPath = !string.IsNullOrEmpty(_endpoint) ? _endpoint : _definition.EntityName.ToLower();
+            
             _methods.Add(new MethodSegment
             {
                 Name = "getById",
@@ -67,7 +107,7 @@ namespace AngularGenerator.Services.Builders
                 ReturnType = $"Observable<{_definition.EntityName}Model>",
                 BodyLines = new List<string>
                 {
-                    $"return this.http.get<{_definition.EntityName}Model>(`${{this.baseUrl}}/{entityLower}/${{id}}`).pipe(",
+                    $"return this.http.get<{_definition.EntityName}Model>(`${{this.baseUrl}}/{apiPath}/${{id}}`).pipe(",
                     $"  map((item) => this.map{_definition.PrimaryKeyName}(item)),",
                     "  catchError(this.handleError),",
                     ");"
@@ -78,7 +118,8 @@ namespace AngularGenerator.Services.Builders
         
         public ServiceBuilder WithCreate()
         {
-            var entityLower = _definition.EntityName.ToLower();
+            var apiPath = !string.IsNullOrEmpty(_endpoint) ? _endpoint : _definition.EntityName.ToLower();
+            
             _methods.Add(new MethodSegment
             {
                 Name = "create",
@@ -87,7 +128,7 @@ namespace AngularGenerator.Services.Builders
                 BodyLines = new List<string>
                 {
                     "return this.http",
-                    $"  .post<{_definition.EntityName}Model>(`${{this.baseUrl}}/{entityLower}`, data)",
+                    $"  .post<{_definition.EntityName}Model>(`${{this.baseUrl}}/{apiPath}`, data)",
                     "  .pipe(catchError(this.handleError));"
                 }
             });
@@ -96,7 +137,8 @@ namespace AngularGenerator.Services.Builders
         
         public ServiceBuilder WithUpdate()
         {
-            var entityLower = _definition.EntityName.ToLower();
+            var apiPath = !string.IsNullOrEmpty(_endpoint) ? _endpoint : _definition.EntityName.ToLower();
+            
             _methods.Add(new MethodSegment
             {
                 Name = "update",
@@ -105,7 +147,7 @@ namespace AngularGenerator.Services.Builders
                 BodyLines = new List<string>
                 {
                     "return this.http",
-                    $"  .put<{_definition.EntityName}Model>(`${{this.baseUrl}}/{entityLower}/${{id}}`, data)",
+                    $"  .put<{_definition.EntityName}Model>(`${{this.baseUrl}}/{apiPath}/${{id}}`, data)",
                     "  .pipe(catchError(this.handleError));"
                 }
             });
@@ -114,7 +156,8 @@ namespace AngularGenerator.Services.Builders
         
         public ServiceBuilder WithDelete()
         {
-            var entityLower = _definition.EntityName.ToLower();
+            var apiPath = !string.IsNullOrEmpty(_endpoint) ? _endpoint : _definition.EntityName.ToLower();
+            
             _methods.Add(new MethodSegment
             {
                 Name = "delete",
@@ -123,7 +166,7 @@ namespace AngularGenerator.Services.Builders
                 BodyLines = new List<string>
                 {
                     "return this.http",
-                    $"  .delete<void>(`${{this.baseUrl}}/{entityLower}/${{id}}`)",
+                    $"  .delete<void>(`${{this.baseUrl}}/{apiPath}/${{id}}`)",
                     "  .pipe(catchError(this.handleError));"
                 }
             });
@@ -145,15 +188,18 @@ namespace AngularGenerator.Services.Builders
             
             sb.AppendLine();
             
-            // Model interface
-            sb.AppendLine($"export interface {_definition.EntityName}Model {{");
-            foreach (var field in _definition.Fields)
+            // Model interface (only if not separated)
+            if (!_definition.SeparateInterface)
             {
-                var optional = field.IsRequired ? "" : "?";
-                sb.AppendLine($"  {field.FieldName}{optional}: {field.TsType};");
+                sb.AppendLine($"export interface {_definition.EntityName}Model {{");
+                foreach (var field in _definition.Fields)
+                {
+                    var optional = field.IsRequired ? "" : "?";
+                    sb.AppendLine($"  {field.FieldName}{optional}: {field.TsType};");
+                }
+                sb.AppendLine("}");
+                sb.AppendLine();
             }
-            sb.AppendLine("}");
-            sb.AppendLine();
             
             // Service class
             sb.AppendLine("@Injectable({");

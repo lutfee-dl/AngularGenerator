@@ -53,7 +53,14 @@ namespace AngularGenerator.Services.Builders
         
         private void BuildLoadingIndicator()
         {
-            _sb.AppendLine("  @if (isLoading() && !showModal()) {");
+            if (_definition.IsPost || _definition.IsUpdate || _definition.IsGetById)
+            {
+                _sb.AppendLine("  @if (isLoading() && !showModal()) {");
+            }
+            else
+            {
+                _sb.AppendLine("  @if (isLoading()) {");
+            }
             _sb.AppendLine("    <div class=\"loading-state\">");
             _sb.AppendLine("      <div class=\"spinner\"></div> Loading...");
             _sb.AppendLine("    </div>");

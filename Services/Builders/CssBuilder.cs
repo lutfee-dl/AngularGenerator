@@ -107,23 +107,25 @@ namespace AngularGenerator.Services.Builders
             _css.AppendLine("}");
             _css.AppendLine();
 
-            _css.AppendLine(".table th:last-child {");
-            _css.AppendLine(" position: sticky;");
-            _css.AppendLine(" right: 0;");
-            _css.AppendLine(" background-color: #f8f9fa;");
-            _css.AppendLine(" z-index: 2;");
-            _css.AppendLine(" box-shadow: -2px 0 5px rgba(0,0,0,0.05);");
-            _css.AppendLine("}");
-            _css.AppendLine();
-
-            _css.AppendLine(".table td:last-child {");
-            _css.AppendLine(" position: sticky;");
-            _css.AppendLine(" right: 0;");
-            _css.AppendLine(" background-color: #fff;");
-            _css.AppendLine(" z-index: 1;");
-            _css.AppendLine(" box-shadow: -2px 0 5px rgba(0,0,0,0.05);");
-            _css.AppendLine("}");
-            _css.AppendLine();
+            if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
+            {
+                _css.AppendLine(".table th:last-child {");
+                _css.AppendLine(" position: sticky;");
+                _css.AppendLine(" right: 0;");
+                _css.AppendLine(" background-color: #f8f9fa;");
+                _css.AppendLine(" z-index: 2;");
+                _css.AppendLine(" box-shadow: -2px 0 5px rgba(0,0,0,0.05);");
+                _css.AppendLine("}");
+                _css.AppendLine();
+                _css.AppendLine(".table td:last-child {");
+                _css.AppendLine(" position: sticky;");
+                _css.AppendLine(" right: 0;");
+                _css.AppendLine(" background-color: #fff;");
+                _css.AppendLine(" z-index: 1;");
+                _css.AppendLine(" box-shadow: -2px 0 5px rgba(0,0,0,0.05);");
+                _css.AppendLine("}");
+                _css.AppendLine();
+            }
 
             _css.AppendLine(".table tbody tr:nth-child(even) td:last-child {");
             _css.AppendLine(" background-color: #f2f2f2;");
@@ -203,31 +205,42 @@ namespace AngularGenerator.Services.Builders
         /// </summary>
         public CssBuilder WithModalStyles()
         {
-            _css.AppendLine(".modal-backdrop {");
-            _css.AppendLine("  position: fixed;");
-            _css.AppendLine("  top: 0;");
-            _css.AppendLine("  left: 0;");
-            _css.AppendLine("  width: 100%;");
-            _css.AppendLine("  height: 100%;");
-            _css.AppendLine("  background: rgba(0, 0, 0, 0.5);");
-            _css.AppendLine("  display: flex;");
-            _css.AppendLine("  justify-content: center;");
-            _css.AppendLine("  align-items: center;");
-            _css.AppendLine("  z-index: 1000;");
-            _css.AppendLine("  backdrop-filter: blur(2px);");
-            _css.AppendLine("}");
-            _css.AppendLine(".modal-content {");
-            _css.AppendLine("  background: white;");
-            _css.AppendLine("  padding: 25px;");
-            _css.AppendLine("  border-radius: 8px;");
-            _css.AppendLine("  width: 600px;");
-            _css.AppendLine("  max-width: 90%;");
-            _css.AppendLine("  max-height: 90vh;");
-            _css.AppendLine("  overflow-y: auto;");
-            _css.AppendLine("  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);");
-            _css.AppendLine("}");
-            _css.AppendLine();
-            
+            if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
+            {
+                _css.AppendLine(".modal-actions {");
+                _css.AppendLine("  margin-top: 20px;");
+                _css.AppendLine("  display: flex;");
+                _css.AppendLine("  justify-content: flex-end;");
+                _css.AppendLine("  gap: 10px;");
+                _css.AppendLine("  padding-top: 15px;");
+                _css.AppendLine("  border-top: 1px solid #eee;");
+                _css.AppendLine("}");
+                _css.AppendLine();
+                _css.AppendLine(".modal-backdrop {");
+                _css.AppendLine("  position: fixed;");
+                _css.AppendLine("  top: 0;");
+                _css.AppendLine("  left: 0;");
+                _css.AppendLine("  width: 100%;");
+                _css.AppendLine("  height: 100%;");
+                _css.AppendLine("  background: rgba(0, 0, 0, 0.5);");
+                _css.AppendLine("  display: flex;");
+                _css.AppendLine("  justify-content: center;");
+                _css.AppendLine("  align-items: center;");
+                _css.AppendLine("  z-index: 1000;");
+                _css.AppendLine("  backdrop-filter: blur(2px);");
+                _css.AppendLine("}");
+                _css.AppendLine(".modal-content {");
+                _css.AppendLine("  background: white;");
+                _css.AppendLine("  padding: 25px;");
+                _css.AppendLine("  border-radius: 8px;");
+                _css.AppendLine("  width: 600px;");
+                _css.AppendLine("  max-width: 90%;");
+                _css.AppendLine("  max-height: 90vh;");
+                _css.AppendLine("  overflow-y: auto;");
+                _css.AppendLine("  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);");
+                _css.AppendLine("}");
+                _css.AppendLine();
+            }
             return this;
         }
 
@@ -275,16 +288,6 @@ namespace AngularGenerator.Services.Builders
             _css.AppendLine(".checkbox-wrapper input {");
             _css.AppendLine("  width: 18px;");
             _css.AppendLine("  height: 18px;");
-            _css.AppendLine("}");
-            _css.AppendLine();
-
-            _css.AppendLine(".modal-actions {");
-            _css.AppendLine("  margin-top: 20px;");
-            _css.AppendLine("  display: flex;");
-            _css.AppendLine("  justify-content: flex-end;");
-            _css.AppendLine("  gap: 10px;");
-            _css.AppendLine("  padding-top: 15px;");
-            _css.AppendLine("  border-top: 1px solid #eee;");
             _css.AppendLine("}");
             _css.AppendLine();
 

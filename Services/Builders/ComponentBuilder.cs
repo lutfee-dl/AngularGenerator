@@ -157,5 +157,14 @@ namespace AngularGenerator.Services.Builders
             
             return _cssBuilder.Build();
         }
+        
+        /// <summary>
+        /// Build separate Interface file
+        /// </summary>
+        public string BuildInterface()
+        {
+            var interfaceBuilder = new InterfaceBuilder(_definition);
+            return interfaceBuilder.Build();
+        }
     }
 }

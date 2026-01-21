@@ -74,6 +74,7 @@ namespace AngularGenerator.Controllers
             string generationMode,
             string layoutType,
             string cssFramework,
+            bool separateInterface,
             List<string> selectedFields,
             bool IsGet, bool IsGetById, bool IsPost, bool IsUpdate, bool IsDelete)
         {
@@ -83,6 +84,7 @@ namespace AngularGenerator.Controllers
             ViewBag.GenerationMode = generationMode ?? "Report";
             ViewBag.LayoutType = layoutType;
             ViewBag.CssFramework = cssFramework;
+            ViewBag.SeparateInterface = separateInterface;
 
             try
             {
@@ -114,7 +116,9 @@ namespace AngularGenerator.Controllers
                     IsGet, IsGetById, IsPost, IsUpdate, IsDelete,
                     layoutType: selectedLayoutType,
                     cssFramework: selectedCssFramework,
-                    apiBaseUrl: apiBaseUrl ?? "/api"
+                    apiBaseUrl: apiBaseUrl ?? "/api",
+                    componentName: componentName ?? "",
+                    separateInterface: separateInterface
                 );
 
                 // Validate: ต้องมี PK ถ้าเลือก GetById, Update, หรือ Delete
@@ -128,12 +132,6 @@ namespace AngularGenerator.Controllers
                 result.IsPost = IsPost;
                 result.IsUpdate = IsUpdate;
                 result.IsDelete = IsDelete;
-
-                if (!string.IsNullOrEmpty(componentName))
-                {
-                    result.EntityName = componentName;
-                    result.Selector = "app-" + componentName.ToLower();
-                }
 
                 return View(result);
             }

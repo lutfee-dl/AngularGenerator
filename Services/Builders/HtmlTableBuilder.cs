@@ -77,7 +77,14 @@ namespace AngularGenerator.Services.Builders
 
         private void BuildLoadingIndicator(StringBuilder sb, CSSFramework framework)
         {
-            sb.AppendLine("  @if (isLoading() && !showModal()) {");
+            if (_definition.IsPost || _definition.IsUpdate)
+            {
+                sb.AppendLine("  @if (isLoading() && !showModal()) {");
+            }
+            else
+            {
+                sb.AppendLine("  @if (isLoading()) {");
+            }
             sb.AppendLine("    <div class=\"loading\">Loading...</div>");
             sb.AppendLine("  }");
             sb.AppendLine();
@@ -133,7 +140,10 @@ namespace AngularGenerator.Services.Builders
             }
             
             // Actions column
-            sb.AppendLine("            <th class=\"text-center\">Actions</th>");
+            if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
+            {
+                sb.AppendLine("            <th class=\"text-center\">Actions</th>");
+            }
             sb.AppendLine("          </tr>");
             sb.AppendLine("        </thead>");
             sb.AppendLine("        <tbody>");
@@ -167,7 +177,10 @@ namespace AngularGenerator.Services.Builders
             }
             
             // Actions
-            sb.AppendLine("              <td class=\"text-center action-col\">");
+            if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
+            {
+                sb.AppendLine("              <td class=\"text-center action-col\">");
+            }
             
             if (_definition.IsGet && _definition.IsGetById)
             {
@@ -217,7 +230,7 @@ namespace AngularGenerator.Services.Builders
             }
 
             // Actions column
-            if (_definition.IsUpdate || _definition.IsDelete)
+            if (_definition.IsPost || _definition.IsUpdate || _definition.IsGetById)
             {
                 sb.AppendLine("      <!-- Actions Column -->");
                 sb.AppendLine("      <ng-container matColumnDef=\"actions\">");
@@ -251,7 +264,7 @@ namespace AngularGenerator.Services.Builders
 
         private void BuildModal(StringBuilder sb, CSSFramework framework)
         {
-            if (!_definition.IsPost && !_definition.IsUpdate) return;
+            if (!_definition.IsPost && !_definition.IsUpdate && !_definition.IsGetById) return;
 
             sb.AppendLine();
             sb.AppendLine("  @if (showModal()) {");

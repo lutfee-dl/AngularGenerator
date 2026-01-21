@@ -296,7 +296,7 @@
                                     <i class="fas fa-info-circle text-muted ms-1" title="ใช้ใน Service สำหรับเรียก HTTP requests"></i>
                                 </label>
                                 <input type="text" id="apiBaseUrl" name="apiBaseUrl" class="form-control"
-                                       placeholder="e.g. http://localhost:5000/api"
+                                       placeholder="e.g. http://localhost:5000/api/products"
                                        value="@ViewBag.ApiBaseUrl">
                             </div>
 
@@ -362,6 +362,22 @@
                                 </div>
                             </div>
 
+                            <!-- Separate Interface File Option -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-warning text-dark py-2">
+                                    <i class="fas fa-file-code"></i> File Options
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="separateInterface" name="separateInterface" value="true" @((ViewBag.SeparateInterface == true) ? "checked" : "")>
+                                        <label class="form-check-label" for="separateInterface">
+                                            <i class="fas fa-file-export"></i> สร้างไฟล์ Interface แยก (.interface.ts)
+                                            <small class="text-muted d-block">จะสร้างไฟล์ <code>.interface.ts</code> แยกออกมาพร้อม import ใน component และ service</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
                             <button type="submit" class="btn btn-generate w-100 shadow-sm py-2">Generate Code</button>
                         </div>
                     </div>
@@ -374,82 +390,7 @@
                     <div class="bg-secondary text-white p-2 rounded mb-3 d-flex justify-content-between align-items-center font-monospace">
                         <span id="cliCommand">ng generate component <strong>@(Model?.Selector ?? "<component-name>")</strong> --standalone</span>
                         <button type="button" class="btn btn-sm btn-dark" onclick="copyText('cliCommand', true)"><i class="fa-regular fa-copy"></i></button>
-                    </div>
-
-                    @* API Endpoints Preview *@
-                    @* @if (Model != null && !string.IsNullOrEmpty(Model.GeneratedService))
-                    {
-                        var apiBase = ViewBag.ApiBaseUrl ?? "/api";
-                        var entityLower = Model.EntityName.ToLower();
-                        
-                        <div class="card mb-3 border-primary">
-                            <div class="card-header bg-primary text-white">
-                                <i class="fas fa-network-wired"></i> API Endpoints
-                                <small class="ms-2">(copy สำหรับ Backend)</small>
-                            </div>
-                            <div class="card-body p-2">
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-hover mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th style="width: 80px;">Method</th>
-                                                <th>Endpoint</th>
-                                                <th style="width: 60px;"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="font-monospace small">
-                                            @if (Model.IsGet)
-                                            {
-                                                <tr>
-                                                    <td><span class="badge bg-success">GET</span></td>
-                                                    <td id="apiGet">@apiBase/@entityLower</td>
-                                                    <td><button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyText('apiGet', true)"><i class="fa-regular fa-copy"></i></button></td>
-                                                </tr>
-                                            }
-                                            @if (Model.IsGetById)
-                                            {
-                                                <tr>
-                                                    <td><span class="badge bg-success">GET</span></td>
-                                                    <td id="apiGetById">@apiBase/@entityLower/{id}</td>
-                                                    <td><button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyText('apiGetById', true)"><i class="fa-regular fa-copy"></i></button></td>
-                                                </tr>
-                                            }
-                                            @if (Model.IsPost)
-                                            {
-                                                <tr>
-                                                    <td><span class="badge bg-primary">POST</span></td>
-                                                    <td id="apiPost">@apiBase/@entityLower</td>
-                                                    <td><button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyText('apiPost', true)"><i class="fa-regular fa-copy"></i></button></td>
-                                                </tr>
-                                            }
-                                            @if (Model.IsUpdate)
-                                            {
-                                                <tr>
-                                                    <td><span class="badge bg-warning">PUT</span></td>
-                                                    <td id="apiPut">@apiBase/@entityLower/{id}</td>
-                                                    <td><button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyText('apiPut', true)"><i class="fa-regular fa-copy"></i></button></td>
-                                                </tr>
-                                            }
-                                            @if (Model.IsDelete)
-                                            {
-                                                <tr>
-                                                    <td><span class="badge bg-danger">DELETE</span></td>
-                                                    <td id="apiDelete">@apiBase/@entityLower/{id}</td>
-                                                    <td><button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyText('apiDelete', true)"><i class="fa-regular fa-copy"></i></button></td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div class="mt-2 p-2 bg-light rounded">
-                                    <small class="text-muted">
-                                        <i class="fas fa-info-circle"></i> 
-                                        <strong>Note:</strong> {id} = <code>@(Model.PrimaryKeyName ?? "id")</code> (Primary Key)
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    } *@
+                    </div>        
 
                     <div class="card card-result shadow-sm h-100" style="margin-bottom: 10px;">
                         <div class="card-header">
@@ -478,6 +419,10 @@
                                     <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-html">HTML</a></li>
                                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-ts">TypeScript</a></li>
                                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-svc">Service</a></li>
+                                    @if (!string.IsNullOrEmpty(Model.GeneratedInterface))
+                                    {
+                                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-interface">Interface</a></li>
+                                    }
                                     @if (!string.IsNullOrEmpty(Model.GeneratedCss))
                                     {
                                         <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-css">CSS</a></li>
@@ -496,6 +441,13 @@
                                         <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeSvc')"><i class="fa-regular fa-copy"></i> Copy Service</button>
                                         <textarea readonly="true" id="codeSvc" class="form-control border-0 h-100 font-monospace p-3 bg-light">@Model.GeneratedService</textarea>
                                     </div>
+                                    @if (!string.IsNullOrEmpty(Model.GeneratedInterface))
+                                    {
+                                        <div class="tab-pane fade h-100" id="tab-interface">
+                                            <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeInterface')"><i class="fa-regular fa-copy"></i> Copy Interface</button>
+                                            <textarea readonly="true" id="codeInterface" class="form-control border-0 h-100 font-monospace p-3 bg-light">@Model.GeneratedInterface</textarea>
+                                        </div>
+                                    }
                                     @if (!string.IsNullOrEmpty(Model.GeneratedCss))
                                     {
                                         <div class="tab-pane fade h-100" id="tab-css">

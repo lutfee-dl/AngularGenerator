@@ -27,6 +27,12 @@ namespace AngularGenerator.Services.Builders
             AddImport(new[] { "CommonModule" }, "@angular/common");
             AddImport(new[] { "FormsModule" }, "@angular/forms");
             
+            // Import interface if separated
+            if (_definition.SeparateInterface)
+            {
+                AddImport(new[] { $"{_definition.EntityName}Model" }, $"./{_definition.EntityName.ToLower()}.interface");
+            }
+            
             // Default component decorator
             _componentDecorator.Add($"selector: '{_definition.Selector}'");
             _componentDecorator.Add("standalone: true");
@@ -98,10 +104,17 @@ namespace AngularGenerator.Services.Builders
         }
         
         public TypeScriptBuilder WithService()
-        {
-            AddImport(new[] { $"{_definition.EntityName}Service", $"{_definition.EntityName}Model" }, 
-                      $"./{_definition.EntityName.ToLower()}.service");
-            
+        {   
+            if (!_definition.SeparateInterface)
+            {
+                AddImport(new[] { $"{_definition.EntityName}Service", $"{_definition.EntityName}Model" }, 
+                    $"./{_definition.EntityName.ToLower()}.service");
+            }
+            else
+            {
+                AddImport(new[] { $"{_definition.EntityName}Service" }, 
+                    $"./{_definition.EntityName.ToLower()}.service");
+            }
             AddProperty(new PropertySegment 
             { 
                 Name = "service", 
