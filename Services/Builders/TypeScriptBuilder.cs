@@ -42,13 +42,21 @@ namespace AngularGenerator.Services.Builders
             // Add Material imports if using Angular Material
             if (_definition.CssFramework == CSSFramework.AngularMaterial)
             {
-                AddImport(new[] { "MatTableModule", "MatButtonModule", "MatIconModule", "MatFormFieldModule", "MatInputModule" }, "@angular/material");
+                AddImport(new[] { "MatTableModule" }, "@angular/material/table");
+                AddImport(new[] { "MatButtonModule" }, "@angular/material/button");
+                AddImport(new[] { "MatIconModule" }, "@angular/material/icon");
+                AddImport(new[] { "MatFormFieldModule" }, "@angular/material/form-field");
+                AddImport(new[] { "MatInputModule" }, "@angular/material/input");
+                AddImport(new[] { "MatChipsModule" }, "@angular/material/chips");
+                AddImport(new[] { "MatTooltipModule" }, "@angular/material/tooltip");
+                AddImport(new[] { "MatSortModule" }, "@angular/material/sort");
+                AddImport(new[] { "MatCardModule" }, "@angular/material/card");
                 
                 var importsLine = _componentDecorator.FirstOrDefault(x => x.StartsWith("imports:"));
                 if (importsLine != null)
                 {
                     _componentDecorator.Remove(importsLine);
-                    _componentDecorator.Add("imports: [CommonModule, FormsModule, MatTableModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule]");
+                    _componentDecorator.Add("imports: [CommonModule, FormsModule, MatTableModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatChipsModule, MatTooltipModule, MatSortModule, MatCardModule]");
                 }
             }
         }
@@ -73,7 +81,7 @@ namespace AngularGenerator.Services.Builders
         
         public TypeScriptBuilder WithReactiveForms()
         {
-            AddImport(new[] { "ReactiveFormsModule", "FormsModule", "FormBuilder", "FormGroup", "Validators" }, "@angular/forms");
+            AddImport(new[] { "ReactiveFormsModule", "FormBuilder", "FormGroup", "Validators" }, "@angular/forms");
             
             // Update component decorator imports
             var importsLine = _componentDecorator.FirstOrDefault(x => x.StartsWith("imports:"));
@@ -137,6 +145,58 @@ namespace AngularGenerator.Services.Builders
                 IsSignal = false,
                 AccessModifier = "public"
             });
+            
+            // Add displayedColumns for Material Table
+            if (_definition.CssFramework == CSSFramework.AngularMaterial)
+            {
+                var pkField = _definition.Fields.FirstOrDefault(f => f.IsPrimaryKey)?.FieldName ?? "id";
+                var hasCheckbox = _definition.Fields.Any(f => f.UIControl == ControlType.Checkbox);
+                var columns = new List<string> { $"'{pkField}'" };
+                
+                // Add other fields (exclude PK and checkbox)
+                columns.AddRange(_definition.Fields
+                    .Where(f => !f.IsPrimaryKey && f.UIControl != ControlType.Checkbox)
+                    .Select(f => $"'{f.FieldName}'"));
+                
+                if (hasCheckbox)
+                {
+                    columns.Add("'status'");
+                }
+                
+                if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
+                {
+                    columns.Add("'actions'");
+                }
+                
+                var columnsArray = string.Join(", ", columns);
+                
+                AddProperty(new PropertySegment
+                {
+                    Name = "displayedColumns",
+                    Type = "string[]",
+                    InitialValue = $"[{columnsArray}]",
+                    AccessModifier = "public"
+                });
+                
+                // Add cardFields for Material Card view
+                var cardFieldsList = _definition.Fields
+                    .Where(f => !f.IsPrimaryKey && f.UIControl != ControlType.Checkbox)
+                    .Select(f => $"{{ key: '{f.FieldName}', label: '{f.Label}', type: '{GetFieldType(f)}' }}")
+                    .ToList();
+                
+                if (cardFieldsList.Any())
+                {
+                    var cardFieldsValue = $"[{string.Join(", ", cardFieldsList)}]";
+                    
+                    AddProperty(new PropertySegment
+                    {
+                        Name = "cardFields",
+                        Type = "Array<{key: string, label: string, type: string}>",
+                        InitialValue = cardFieldsValue,
+                        AccessModifier = "public"
+                    });
+                }
+            }
             
             AddProperty(new PropertySegment 
             { 
@@ -383,9 +443,9 @@ namespace AngularGenerator.Services.Builders
                     "this.isLoading.set(true);",
                     $"this.service.getById(item.{_definition.PrimaryKeyName}).subscribe({{", 
                     "  next: (data) => {",
-                    "    this.isViewMode.set(false);",
-                    "    this.isEditMode.set(true);",
-                    $"    this.{_definition.EntityName.ToLower()}Form.enable();",
+                    "    this.isViewMode.set(true);",
+                    "    this.isEditMode.set(false);",
+                    $"    this.{_definition.EntityName.ToLower()}Form.disable();",
                     $"    this.{_definition.EntityName.ToLower()}Form.patchValue(data);",
                     "    this.showModal.set(true);",
                     "    this.isLoading.set(false);",
@@ -688,6 +748,19 @@ namespace AngularGenerator.Services.Builders
             sb.AppendLine("}");
             
             return sb.ToString();
+        }
+        
+        private string GetFieldType(AngularField field)
+        {
+            return field.UIControl switch
+            {
+                ControlType.Text => "text",
+                ControlType.Number => "number",
+                ControlType.DatePicker => "date",
+                ControlType.Checkbox => "checkbox",
+                ControlType.TextArea => "textarea",
+                _ => "text"
+            };
         }
         
         public TypeScriptBuilder Reset()

@@ -60,7 +60,7 @@ namespace AngularGenerator.Services.Builders
             {
                 if (framework == CSSFramework.AngularMaterial)
                 {
-                    sb.AppendLine($"      <button {buttonClass} (click)=\"openCreate()\">");
+                    sb.AppendLine("      <button mat-raised-button color=\"primary\" (click)=\"openCreate()\">");
                     sb.AppendLine("        <mat-icon>add</mat-icon> Add New");
                     sb.AppendLine("      </button>");
                 }
@@ -93,9 +93,20 @@ namespace AngularGenerator.Services.Builders
         private void BuildDataTable(StringBuilder sb, CSSFramework framework)
         {
             sb.AppendLine("  @if (!isLoading() || dataList().length > 0) {");
-            sb.AppendLine("    <div class=\"table-responsive\">");
-            BuildStandardTable(sb, framework);
-            sb.AppendLine("    </div>");
+            
+            if (framework == CSSFramework.AngularMaterial)
+            {
+                sb.AppendLine("    <div class=\"mat-elevation-z2\">");
+                BuildMaterialTable(sb);
+                sb.AppendLine("    </div>");
+            }
+            else
+            {
+                sb.AppendLine("    <div class=\"table-responsive\">");
+                BuildStandardTable(sb, framework);
+                sb.AppendLine("    </div>");
+            }
+            
             sb.AppendLine("  }");
             sb.AppendLine();
         }
@@ -166,11 +177,14 @@ namespace AngularGenerator.Services.Builders
                 var checkboxField = _definition.Fields.FirstOrDefault(f => f.UIControl == ControlType.Checkbox);
                 if (checkboxField != null)
                 {
+                    var badgeActiveClass = framework == CSSFramework.Bootstrap ? "badge bg-success" : "badge badge-active";
+                    var badgeInactiveClass = framework == CSSFramework.Bootstrap ? "badge bg-danger" : "badge badge-inactive";
+                    
                     sb.AppendLine("              <td class=\"text-center\">");
                     sb.AppendLine($"                @if ($any(item)['{checkboxField.FieldName}']) {{");
-                    sb.AppendLine("                  <span class=\"badge badge-inactive\">Inactive</span>");
+                    sb.AppendLine($"                  <span class=\"{badgeInactiveClass}\">Inactive</span>");
                     sb.AppendLine("                } @else {");
-                    sb.AppendLine("                  <span class=\"badge badge-active\">Active</span>");
+                    sb.AppendLine($"                  <span class=\"{badgeActiveClass}\">Active</span>");
                     sb.AppendLine("                }");
                     sb.AppendLine("              </td>");
                 }
@@ -215,39 +229,77 @@ namespace AngularGenerator.Services.Builders
 
         private void BuildMaterialTable(StringBuilder sb)
         {
-            sb.AppendLine("    <table mat-table [dataSource]=\"dataList()\" class=\"mat-elevation-z2\">");
+            var primaryKey = _definition.Fields.FirstOrDefault(f => f.IsPrimaryKey)?.FieldName ?? "id";
+            var hasCheckbox = _definition.Fields.Any(f => f.UIControl == ControlType.Checkbox);
+            
+            sb.AppendLine("    <table mat-table [dataSource]=\"filteredList()\" class=\"w-100\">");
             sb.AppendLine();
 
-            // Generate columns
-            foreach (var field in _definition.Fields)
+            // Primary Key Column
+            sb.AppendLine($"      <!-- Column: {primaryKey} -->");
+            sb.AppendLine($"      <ng-container matColumnDef=\"{primaryKey}\">");
+            sb.AppendLine("        <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>");
+            sb.AppendLine($"        <td mat-cell *matCellDef=\"let item\">{{{{ item.{primaryKey} }}}}</td>");
+            sb.AppendLine("      </ng-container>");
+            sb.AppendLine();
+
+            // Generate other columns (exclude PK and checkbox)
+            foreach (var field in _definition.Fields.Where(f => !f.IsPrimaryKey && f.UIControl != ControlType.Checkbox))
             {
                 sb.AppendLine($"      <!-- Column: {field.FieldName} -->");
                 sb.AppendLine($"      <ng-container matColumnDef=\"{field.FieldName}\">");
-                sb.AppendLine($"        <th mat-header-cell *matHeaderCellDef>{field.Label}</th>");
-                sb.AppendLine($"        <td mat-cell *matCellDef=\"let element\">{{{{ element.{field.FieldName} }}}}</td>");
+                sb.AppendLine($"        <th mat-header-cell *matHeaderCellDef mat-sort-header>{field.Label}</th>");
+                sb.AppendLine($"        <td mat-cell *matCellDef=\"let item\">{{{{ item.{field.FieldName} }}}}</td>");
                 sb.AppendLine("      </ng-container>");
                 sb.AppendLine();
             }
 
+            // Status column (for checkbox fields)
+            if (hasCheckbox)
+            {
+                var checkboxField = _definition.Fields.FirstOrDefault(f => f.UIControl == ControlType.Checkbox);
+                if (checkboxField != null)
+                {
+                    sb.AppendLine("      <!-- Status Column -->");
+                    sb.AppendLine("      <ng-container matColumnDef=\"status\">");
+                    sb.AppendLine("        <th mat-header-cell *matHeaderCellDef>Status</th>");
+                    sb.AppendLine("        <td mat-cell *matCellDef=\"let item\">");
+                    sb.AppendLine($"          @if (item.{checkboxField.FieldName}) {{");
+                    sb.AppendLine("            <mat-chip color=\"warn\">Inactive</mat-chip>");
+                    sb.AppendLine("          } @else {");
+                    sb.AppendLine("            <mat-chip color=\"primary\">Active</mat-chip>");
+                    sb.AppendLine("          }");
+                    sb.AppendLine("        </td>");
+                    sb.AppendLine("      </ng-container>");
+                    sb.AppendLine();
+                }
+            }
+
             // Actions column
-            if (_definition.IsPost || _definition.IsUpdate || _definition.IsGetById)
+            if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
             {
                 sb.AppendLine("      <!-- Actions Column -->");
                 sb.AppendLine("      <ng-container matColumnDef=\"actions\">");
                 sb.AppendLine("        <th mat-header-cell *matHeaderCellDef>Actions</th>");
-                sb.AppendLine("        <td mat-cell *matCellDef=\"let element\">");
+                sb.AppendLine("        <td mat-cell *matCellDef=\"let item\">");
+                
+                if (_definition.IsGetById)
+                {
+                    sb.AppendLine("          <button mat-icon-button color=\"primary\" (click)=\"openDetail(item)\" matTooltip=\"View Details\">");
+                    sb.AppendLine("            <mat-icon>visibility</mat-icon>");
+                    sb.AppendLine("          </button>");
+                }
                 
                 if (_definition.IsUpdate)
                 {
-                    sb.AppendLine("          <button mat-icon-button color=\"primary\" (click)=\"onEdit(element)\">");
+                    sb.AppendLine("          <button mat-icon-button color=\"accent\" (click)=\"openEdit(item)\" matTooltip=\"Edit\">");
                     sb.AppendLine("            <mat-icon>edit</mat-icon>");
                     sb.AppendLine("          </button>");
                 }
                 
                 if (_definition.IsDelete)
                 {
-                    var primaryKey = _definition.Fields.FirstOrDefault(f => f.IsPrimaryKey)?.FieldName ?? "id";
-                    sb.AppendLine($"          <button mat-icon-button color=\"warn\" (click)=\"onDelete(element.{primaryKey})\">");
+                    sb.AppendLine("          <button mat-icon-button color=\"warn\" (click)=\"onDelete(item)\" matTooltip=\"Delete\">");
                     sb.AppendLine("            <mat-icon>delete</mat-icon>");
                     sb.AppendLine("          </button>");
                 }
@@ -257,8 +309,17 @@ namespace AngularGenerator.Services.Builders
                 sb.AppendLine();
             }
 
+            // No data row
+            sb.AppendLine("      <!-- No Data Row -->");
+            sb.AppendLine("      <tr class=\"mat-row\" *matNoDataRow>");
+            sb.AppendLine("        <td class=\"mat-cell\" [attr.colspan]=\"displayedColumns.length\">");
+            sb.AppendLine("          <div class=\"no-data\">No data found</div>");
+            sb.AppendLine("        </td>");
+            sb.AppendLine("      </tr>");
+            sb.AppendLine();
+
             sb.AppendLine("      <tr mat-header-row *matHeaderRowDef=\"displayedColumns\"></tr>");
-            sb.AppendLine("      <tr mat-row *matRowDef=\"let row; columns: displayedColumns;\"></tr>");
+            sb.AppendLine("      <tr mat-row *matRowDef=\"let row; columns: displayedColumns\"></tr>");
             sb.AppendLine("    </table>");
         }
 
@@ -298,12 +359,26 @@ namespace AngularGenerator.Services.Builders
             sb.AppendLine("                    <span>Yes / No</span>");
             sb.AppendLine("                  </div>");
             
-            // Other input types
+            // Other input types - with framework-specific styling
             sb.AppendLine("                } @else {");
-            sb.AppendLine("                  <input [type]=\"field.type\"");
-            sb.AppendLine("                         [formControlName]=\"field.key\"");
-            sb.AppendLine("                         class=\"form-control\"");
-            sb.AppendLine("                         [attr.maxlength]=\"field.maxLength\">");
+            
+            if (framework == CSSFramework.AngularMaterial)
+            {
+                sb.AppendLine("                  <mat-form-field appearance=\"outline\" class=\"w-100\">");
+                sb.AppendLine("                    <input matInput [type]=\"field.type\"");
+                sb.AppendLine("                           [formControlName]=\"field.key\"");
+                sb.AppendLine("                           [attr.maxlength]=\"field.maxLength\">");
+                sb.AppendLine("                  </mat-form-field>");
+            }
+            else
+            {
+                var inputClass = framework == CSSFramework.Bootstrap ? "form-control" : "form-control";
+                sb.AppendLine($"                  <input [type]=\"field.type\"");
+                sb.AppendLine("                         [formControlName]=\"field.key\"");
+                sb.AppendLine($"                         class=\"{inputClass}\"");
+                sb.AppendLine("                         [attr.maxlength]=\"field.maxLength\">");
+            }
+            
             sb.AppendLine("                }");
             sb.AppendLine("              </div>");
             sb.AppendLine("            }");
@@ -316,7 +391,7 @@ namespace AngularGenerator.Services.Builders
             sb.AppendLine("              {{ isViewMode() ? 'Close' : 'Cancel' }}");
             sb.AppendLine("            </button>");
             sb.AppendLine();
-            sb.AppendLine("            @if(!isViewMode()) {");
+            sb.AppendLine("            @if(isViewMode()) {");
             sb.AppendLine("              <button type=\"button\" class=\"btn btn-sm btn-edit\" (click)=\"enableEditMode()\">Edit</button>");
             sb.AppendLine("            }");
             sb.AppendLine();

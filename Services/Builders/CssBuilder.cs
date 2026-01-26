@@ -22,7 +22,8 @@ namespace AngularGenerator.Services.Builders
         /// </summary>
         public CssBuilder WithTableStyles()
         {
-            _css.AppendLine("@import url('https://fonts.googleapis.com/css2?family=Anuphan&family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Mitr:wght@200;300;400;500;600;700&family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');");
+            _css.AppendLine("@import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');");
+            _css.AppendLine();
             _css.AppendLine("body {");
             _css.AppendLine("  margin: 0;");
             _css.AppendLine("  padding: 0;");
@@ -300,7 +301,8 @@ namespace AngularGenerator.Services.Builders
         public CssBuilder WithCardStyles()
         {
             // Import Google Fonts (same as table view)
-            _css.AppendLine("@import url('https://fonts.googleapis.com/css2?family=Anuphan&family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Mitr:wght@200;300;400;500;600;700&family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');");
+            _css.AppendLine("@import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');");
+            _css.AppendLine();
             _css.AppendLine("body {");
             _css.AppendLine("  margin: 0;");
             _css.AppendLine("  padding: 0;");

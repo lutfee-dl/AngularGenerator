@@ -71,7 +71,7 @@ namespace AngularGenerator.Services.Builders
         /// <summary>
         /// Build Service TypeScript based on CRUD selections
         /// </summary>
-        public string BuildService(string apiBaseUrl = "/api")
+        public string BuildService(string apiBaseUrl = "http://localhost:3000/api/exemples")
         {
             _serviceBuilder = new ServiceBuilder(_definition);
             

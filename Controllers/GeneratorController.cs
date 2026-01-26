@@ -80,7 +80,7 @@ namespace AngularGenerator.Controllers
         {
             ViewBag.LastTableName = tableName;
             ViewBag.SelectedFields = selectedFields;
-            ViewBag.ApiBaseUrl = apiBaseUrl ?? "/api";
+            ViewBag.ApiBaseUrl = apiBaseUrl ?? "http://localhost:3000/api/exemples";
             ViewBag.GenerationMode = generationMode ?? "Report";
             ViewBag.LayoutType = layoutType;
             ViewBag.CssFramework = cssFramework;
@@ -116,7 +116,7 @@ namespace AngularGenerator.Controllers
                     IsGet, IsGetById, IsPost, IsUpdate, IsDelete,
                     layoutType: selectedLayoutType,
                     cssFramework: selectedCssFramework,
-                    apiBaseUrl: apiBaseUrl ?? "/api",
+                    apiBaseUrl: apiBaseUrl ?? "http://localhost:3000/api/exemples",
                     componentName: componentName ?? "",
                     separateInterface: separateInterface
                 );

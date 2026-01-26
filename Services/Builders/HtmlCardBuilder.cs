@@ -33,6 +33,8 @@ namespace AngularGenerator.Services.Builders
         
         private void BuildHeader()
         {
+            var framework = _definition.CssFramework;
+            
             _sb.AppendLine("  <div class=\"header-section\">");
             _sb.AppendLine($"    <h2>{_definition.EntityName} management</h2>");
             _sb.AppendLine("    <div class=\"header-actions\">");
@@ -43,7 +45,21 @@ namespace AngularGenerator.Services.Builders
             
             if (_definition.IsPost)
             {
-                _sb.AppendLine($"      <button class=\"btn btn-add\" (click)=\"openCreate()\">+ New {_definition.EntityName}</button>");
+                if (framework == CSSFramework.AngularMaterial)
+                {
+                    _sb.AppendLine("      <button mat-raised-button color=\"primary\" (click)=\"openCreate()\">");
+                    _sb.AppendLine("        <mat-icon>add</mat-icon>");
+                    _sb.AppendLine($"        New {_definition.EntityName}");
+                    _sb.AppendLine("      </button>");
+                }
+                else if (framework == CSSFramework.Bootstrap)
+                {
+                    _sb.AppendLine($"      <button class=\"btn btn-primary\" (click)=\"openCreate()\">+ New {_definition.EntityName}</button>");
+                }
+                else
+                {
+                    _sb.AppendLine($"      <button class=\"btn btn-add\" (click)=\"openCreate()\">+ New {_definition.EntityName}</button>");
+                }
             }
             
             _sb.AppendLine("    </div>");
@@ -70,15 +86,116 @@ namespace AngularGenerator.Services.Builders
         
         private void BuildCardGrid(string primaryKey, bool hasCheckbox)
         {
+            var framework = _definition.CssFramework;
+            
             _sb.AppendLine("  @if (!isLoading()) {");
             _sb.AppendLine("    ");
             _sb.AppendLine("    <div class=\"product-grid\">");
             _sb.AppendLine($"      @for (item of filteredList(); track item.{primaryKey}) {{");
+            
+            if (framework == CSSFramework.AngularMaterial)
+            {
+                BuildMaterialCard(primaryKey, hasCheckbox);
+            }
+            else
+            {
+                BuildStandardCard(primaryKey, hasCheckbox);
+            }
+            
+            _sb.AppendLine("      }");
+            _sb.AppendLine("    </div>");
+            _sb.AppendLine();
+            _sb.AppendLine("    @if(filteredList().length === 0) {");
+            _sb.AppendLine("        <div class=\"empty-state\">");
+            _sb.AppendLine("            <p>No data found matching your search.</p>");
+            _sb.AppendLine("        </div>");
+            _sb.AppendLine("    }");
+            _sb.AppendLine("  }");
+        }
+        
+        private void BuildMaterialCard(string primaryKey, bool hasCheckbox)
+        {
+            _sb.AppendLine("        <mat-card class=\"product-card\">");
+            
+            // Card Header with Image
+            var titleField = _definition.Fields.FirstOrDefault(f => !f.IsPrimaryKey);
+            if (titleField != null)
+            {
+                _sb.AppendLine("          <mat-card-header>");
+                _sb.AppendLine($"            <mat-card-title>{{{{ item.{titleField.FieldName} }}}}</mat-card-title>");
+                
+                if (hasCheckbox)
+                {
+                    var checkboxField = _definition.Fields.FirstOrDefault(f => f.UIControl == ControlType.Checkbox);
+                    if (checkboxField != null)
+                    {
+                        _sb.AppendLine("            <div class=\"card-header-actions\">");
+                        _sb.AppendLine($"              @if (item.{checkboxField.FieldName}) {{");
+                        _sb.AppendLine("                <mat-chip color=\"primary\">Active</mat-chip>");
+                        _sb.AppendLine("              } @else {");
+                        _sb.AppendLine("                <mat-chip color=\"warn\">Inactive</mat-chip>");
+                        _sb.AppendLine("              }");
+                        _sb.AppendLine("            </div>");
+                    }
+                }
+                
+                _sb.AppendLine("          </mat-card-header>");
+            }
+            
+            // Card Image
+            _sb.AppendLine("          <img mat-card-image src=\"https://placehold.co/600x400?text=No+Image\" alt=\"Product\" (click)=\"openDetail(item)\" style=\"cursor: pointer;\">");
+            
+            // Card Content - Use loop for fields
+            _sb.AppendLine("          <mat-card-content>");
+            _sb.AppendLine("            @for (field of cardFields; track field.key) {");
+            _sb.AppendLine("              <div class=\"field-row\">");
+            _sb.AppendLine("                <strong>{{ field.label }}:</strong>");
+            _sb.AppendLine("                @if (field.type === 'number') {");
+            _sb.AppendLine("                  <span>{{ item[field.key] | number:'1.2-2' }}</span>");
+            _sb.AppendLine("                } @else if (field.type === 'date') {");
+            _sb.AppendLine("                  <span>{{ item[field.key] | date:'short' }}</span>");
+            _sb.AppendLine("                } @else {");
+            _sb.AppendLine("                  <span>{{ item[field.key] }}</span>");
+            _sb.AppendLine("                }");
+            _sb.AppendLine("              </div>");
+            _sb.AppendLine("            }");
+            _sb.AppendLine("          </mat-card-content>");
+            
+            // Card Actions
+            _sb.AppendLine("          <mat-card-actions align=\"end\">");
+            
+            if (_definition.IsGetById)
+            {
+                _sb.AppendLine("            <button mat-button color=\"primary\" (click)=\"openDetail(item)\">");
+                _sb.AppendLine("              <mat-icon>visibility</mat-icon> View");
+                _sb.AppendLine("            </button>");
+            }
+            
+            if (_definition.IsUpdate)
+            {
+                _sb.AppendLine("            <button mat-button color=\"accent\" (click)=\"openEdit(item)\">");
+                _sb.AppendLine("              <mat-icon>edit</mat-icon> Edit");
+                _sb.AppendLine("            </button>");
+            }
+            
+            if (_definition.IsDelete)
+            {
+                _sb.AppendLine("            <button mat-button color=\"warn\" (click)=\"onDelete(item)\">");
+                _sb.AppendLine("              <mat-icon>delete</mat-icon> Delete");
+                _sb.AppendLine("            </button>");
+            }
+            
+            _sb.AppendLine("          </mat-card-actions>");
+            _sb.AppendLine("        </mat-card>");
+        }
+        
+        private void BuildStandardCard(string primaryKey, bool hasCheckbox)
+        {
             _sb.AppendLine("        <div class=\"card\" >");
             _sb.AppendLine("          <div class=\"card-image-wrapper\">");
             _sb.AppendLine("            <img src=\"https://placehold.co/600x400?text=No+Image\" alt=\"Product\" (click)=\"openDetail(item)\"/>");
             
-            // Badge สำหรบ checkbox field (ถาม)
+            // Badge สำหรบ checkbox field
             if (hasCheckbox)
             {
                 var checkboxField = _definition.Fields.FirstOrDefault(f => f.UIControl == ControlType.Checkbox);
@@ -129,21 +246,43 @@ namespace AngularGenerator.Services.Builders
             _sb.AppendLine();
             
             // Card Footer with Actions
+            var framework = _definition.CssFramework;
             _sb.AppendLine("          <div class=\"card-footer\">");
             
             if (_definition.IsGetById)
             {
-                _sb.AppendLine($"             <button class=\"btn btn-primary view\" (click)=\"openDetail(item)\" title=\"View\">View</button>");
+                if (framework == CSSFramework.Bootstrap)
+                {
+                    _sb.AppendLine("             <button class=\"btn btn-sm btn-info\" (click)=\"openDetail(item)\">View</button>");
+                }
+                else
+                {
+                    _sb.AppendLine("             <button class=\"btn btn-primary view\" (click)=\"openDetail(item)\" title=\"View\">View</button>");
+                }
             }
             
             if (_definition.IsUpdate)
             {
-                _sb.AppendLine($"             <button class=\"btn btn-warning edit\" (click)=\"openEdit(item)\" title=\"Edit\">Edit</button>");
+                if (framework == CSSFramework.Bootstrap)
+                {
+                    _sb.AppendLine("             <button class=\"btn btn-sm btn-warning\" (click)=\"openEdit(item)\">Edit</button>");
+                }
+                else
+                {
+                    _sb.AppendLine("             <button class=\"btn btn-warning edit\" (click)=\"openEdit(item)\" title=\"Edit\">Edit</button>");
+                }
             }
             
             if (_definition.IsDelete)
             {
-                _sb.AppendLine($"             <button class=\"btn btn-danger delete\" (click)=\"onDelete(item)\" title=\"Delete\">Delete</button>");
+                if (framework == CSSFramework.Bootstrap)
+                {
+                    _sb.AppendLine("             <button class=\"btn btn-sm btn-danger\" (click)=\"onDelete(item)\">Delete</button>");
+                }
+                else
+                {
+                    _sb.AppendLine("             <button class=\"btn btn-danger delete\" (click)=\"onDelete(item)\" title=\"Delete\">Delete</button>");
+                }
             }
             
             _sb.AppendLine("          </div>");
@@ -199,21 +338,55 @@ namespace AngularGenerator.Services.Builders
             _sb.AppendLine("          }");
             _sb.AppendLine("        </div>");
             _sb.AppendLine();
+            var framework = _definition.CssFramework;
             _sb.AppendLine("        <div class=\"modal-actions\">");
-            _sb.AppendLine("          <button type=\"button\" class=\"btn btn-secondary\" (click)=\"onClose()\">Cancel</button>");
             
-            if (_definition.IsGetById)
+            if (framework == CSSFramework.AngularMaterial)
             {
-                _sb.AppendLine("            @if (isViewMode()) {");
-                _sb.AppendLine("              <button type=\"button\" class=\"btn btn-edit\" (click)=\"enableEditMode()\">");
-                _sb.AppendLine("                Edit");
-                _sb.AppendLine("              </button>");
+                _sb.AppendLine("          <button type=\"button\" mat-button (click)=\"onClose()\">Cancel</button>");
+                
+                if (_definition.IsGetById)
+                {
+                    _sb.AppendLine("          @if (isViewMode()) {");
+                    _sb.AppendLine("            <button type=\"button\" mat-raised-button color=\"primary\" (click)=\"enableEditMode()\">Edit</button>");
+                    _sb.AppendLine("          }");
+                }
+                
+                _sb.AppendLine("          @if(!isViewMode()) {");
+                _sb.AppendLine($"            <button type=\"submit\" mat-raised-button color=\"primary\" [disabled]=\"{_definition.EntityName.ToLower()}Form.invalid\">Save</button>");
+                _sb.AppendLine("          }");
+            }
+            else if (framework == CSSFramework.Bootstrap)
+            {
+                _sb.AppendLine("          <button type=\"button\" class=\"btn btn-secondary\" (click)=\"onClose()\">Cancel</button>");
+                
+                if (_definition.IsGetById)
+                {
+                    _sb.AppendLine("          @if (isViewMode()) {");
+                    _sb.AppendLine("            <button type=\"button\" class=\"btn btn-warning\" (click)=\"enableEditMode()\">Edit</button>");
+                    _sb.AppendLine("          }");
+                }
+                
+                _sb.AppendLine("          @if(!isViewMode()) {");
+                _sb.AppendLine($"            <button type=\"submit\" class=\"btn btn-success\" [disabled]=\"{_definition.EntityName.ToLower()}Form.invalid\">Save</button>");
+                _sb.AppendLine("          }");
+            }
+            else
+            {
+                _sb.AppendLine("          <button type=\"button\" class=\"btn btn-secondary\" (click)=\"onClose()\">Cancel</button>");
+                
+                if (_definition.IsGetById)
+                {
+                    _sb.AppendLine("          @if (isViewMode()) {");
+                    _sb.AppendLine("            <button type=\"button\" class=\"btn btn-edit\" (click)=\"enableEditMode()\">Edit</button>");
+                    _sb.AppendLine("          }");
+                }
+                
+                _sb.AppendLine("          @if(!isViewMode()) {");
+                _sb.AppendLine($"            <button type=\"submit\" class=\"btn btn-success\" [disabled]=\"{_definition.EntityName.ToLower()}Form.invalid\">Save</button>");
                 _sb.AppendLine("          }");
             }
             
-            _sb.AppendLine("          @if(!isViewMode()) {");
-            _sb.AppendLine($"            <button type=\"submit\" class=\"btn btn-success\" [disabled]=\"{_definition.EntityName.ToLower()}Form.invalid\">Save</button>");
-            _sb.AppendLine("          }");
             _sb.AppendLine("        </div>");
             _sb.AppendLine("      </form>");
             _sb.AppendLine("    </div>");

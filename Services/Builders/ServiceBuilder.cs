@@ -44,7 +44,7 @@ namespace AngularGenerator.Services.Builders
             
             if (string.IsNullOrEmpty(apiBaseUrl))
             {
-                _baseUrl = "http://localhost:3000/api";
+                _baseUrl = "http://localhost:3000/api/exemples";
                 _endpoint = "";
                 return this;
             }
