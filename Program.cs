@@ -12,6 +12,10 @@ builder.Services.AddScoped<DbSchemaService>();
 builder.Services.AddScoped<AngularComponentFactory>();
 builder.Services.AddScoped<FullStackGenerator>();
 
+// Register HttpClient and JsonSchemaService for API/JSON schema detection
+builder.Services.AddHttpClient<JsonSchemaService>();
+builder.Services.AddScoped<JsonSchemaService>();
+
 // Build App
 var app = builder.Build();
 
