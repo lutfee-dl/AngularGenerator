@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\ProjectFinal\\AngularGenerator\\Angular_Generate.csproj": {}
+    "D:\\ProjectFinal\\Final\\AngularGenerator\\Angular_Generate.csproj": {}
   },
   "projects": {
-    "D:\\ProjectFinal\\AngularGenerator\\Angular_Generate.csproj": {
+    "D:\\ProjectFinal\\Final\\AngularGenerator\\Angular_Generate.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\ProjectFinal\\AngularGenerator\\Angular_Generate.csproj",
+        "projectUniqueName": "D:\\ProjectFinal\\Final\\AngularGenerator\\Angular_Generate.csproj",
         "projectName": "Angular_Generate",
-        "projectPath": "D:\\ProjectFinal\\AngularGenerator\\Angular_Generate.csproj",
+        "projectPath": "D:\\ProjectFinal\\Final\\AngularGenerator\\Angular_Generate.csproj",
         "packagesPath": "C:\\Users\\bp6098b\\.nuget\\packages\\",
-        "outputPath": "D:\\ProjectFinal\\AngularGenerator\\obj\\",
+        "outputPath": "D:\\ProjectFinal\\Final\\AngularGenerator\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

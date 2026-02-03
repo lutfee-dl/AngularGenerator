@@ -15,10 +15,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Angular CRUD Generator</title>
+
+    <!-- Add-on Libraries -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- prism.js -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js"></script>
 
     <style>
         body {
@@ -104,7 +113,6 @@
 
             .copy-btn:hover {
                 opacity: 1;
-                transform: scale(1.1);
             }
 
         .tab-pane {
@@ -128,12 +136,35 @@
         /* Search Input Highlight */
         #tableSearchInput:focus {
             border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
         }
 
         /* Clear button animation */
         .btn-outline-secondary:active {
             transform: scale(0.95);
+        }
+
+        /* Prism Code Block Styling */
+        pre[class*="language-"] {
+            margin: 0 !important;
+            border-radius: 0 !important;
+            background: #f5f5f5 !important;
+            border: none !important;
+            padding: 1rem !important;
+            max-height: 1020px !important;
+            overflow-y: auto !important;
+        }
+
+        code[class*="language-"] {
+            background: transparent !important;
+            text-shadow: none !important;
+            font-family: 'Courier New', monospace !important;
+            font-size: 0.9rem !important;
+            line-height: 1.6 !important;
+        }
+
+        .tab-content {
+            background: #f5f5f5;
         }
     </style>
 </head>
@@ -551,8 +582,7 @@
                 </div>
 
                 <!-- Result ด้านขวา (col-md-8) -->
-                <div class="col-md-8">
-                    
+                <div class="col-md-8 h-100">
                     @if (Model != null && !string.IsNullOrEmpty(Model.GeneratedHtml))
                     {
                         <label class="fw-bold mb-1">Create Component</label>
@@ -560,7 +590,7 @@
                             <span id="cliCommand">ng generate component <strong>@(Model?.Selector ?? "<component-name>")</strong> --standalone</span>
                             <button type="button" class="btn btn-sm btn-dark" onclick="copyText('cliCommand', true)"><i class="fa-regular fa-copy"></i></button>
                         </div>        
-                        <div class="card card-result shadow-sm h-100" style="margin-bottom: 10px;" id="resultCard">
+                        <div class="card card-result shadow-sm h-75" style="margin-bottom: 10px;" id="resultCard">
                             <div class="card-header">
                                 <span>ผลลัพธ์ @Model?.EntityName</span>
                                 <div class="d-inline-block ms-3">
@@ -592,26 +622,26 @@
                                         <a class="nav-link" data-bs-toggle="tab" href="#tab-css">CSS</a>
                                     </li>
                                 </ul>
-                                <div class="tab-content h-100">
+                                <div class="tab-content h-75">
                                     <div class="tab-pane fade show active h-100" id="tab-html">
                                         <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeHtml')"><i class="fa-regular fa-copy"></i> Copy HTML</button>
-                                        <textarea readonly="true" id="codeHtml" class="form-control border-0 h-100 font-monospace p-3 bg-light">@Model.GeneratedHtml</textarea>
+                                        <pre class="h-100 m-0" style="overflow: auto;"><code id="codeHtml" class="language-markup">@Model.GeneratedHtml</code></pre>
                                     </div>
                                     <div class="tab-pane fade h-100" id="tab-ts">
                                         <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeTs')"><i class="fa-regular fa-copy"></i> Copy TS</button>
-                                        <textarea readonly="true" id="codeTs" class="form-control border-0 h-100 font-monospace p-3 bg-light">@Model.GeneratedTs</textarea>
+                                        <pre class="h-100 m-0" style="overflow: auto;"><code id="codeTs" class="language-typescript">@Model.GeneratedTs</code></pre>
                                     </div>
                                     <div class="tab-pane fade h-100" id="tab-svc">
                                         <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeSvc')"><i class="fa-regular fa-copy"></i> Copy Service</button>
-                                        <textarea readonly="true" id="codeSvc" class="form-control border-0 h-100 font-monospace p-3 bg-light">@Model.GeneratedService</textarea>
+                                        <pre class="h-100 m-0" style="overflow: auto;"><code id="codeSvc" class="language-typescript">@Model.GeneratedService</code></pre>
                                     </div>
                                     <div class="tab-pane fade h-100" id="tab-interface">
                                         <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeInterface')"><i class="fa-regular fa-copy"></i> Copy Interface</button>
-                                        <textarea readonly="true" id="codeInterface" class="form-control border-0 h-100 font-monospace p-3 bg-light">@Model.GeneratedInterface</textarea>
+                                        <pre class="h-100 m-0" style="overflow: auto;"><code id="codeInterface" class="language-typescript">@Model.GeneratedInterface</code></pre>
                                     </div>
                                     <div class="tab-pane fade h-100" id="tab-css">
                                         <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeCss')"><i class="fa-regular fa-copy"></i> Copy CSS</button>
-                                        <textarea readonly="true" id="codeCss" class="form-control border-0 h-100 font-monospace p-3 bg-light">@Model.GeneratedCss</textarea>
+                                        <pre class="h-100 m-0" style="overflow: auto;"><code id="codeCss" class="language-css">@Model.GeneratedCss</code></pre>
                                     </div>
                                 </div>
                             </div>
@@ -620,13 +650,13 @@
                     else
                     {
                         <!-- Result placeholder -->
-                        <div class="card card-result shadow-sm h-50" style="margin-bottom: 10px;" id="resultPlaceholder">
+                        <div class="card card-result shadow-sm" style="margin-bottom: 10px; min-height: 600px;" id="resultPlaceholder">
                             <div class="card-header">
                                 <span>ผลลัพธ์</span>
                                 <div class="d-inline-block ms-3">
                                 </div>
                             </div>
-                            <div class="card-body p-0 result-area d-flex align-items-center justify-content-center">
+                            <div class="card-body p-0 result-area d-flex align-items-center justify-content-center" style="min-height: 550px;">
                                <!-- Loading state -->
                                 <div class="text-center" id="loadingState" style="display: none;">
                                     <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
@@ -1084,7 +1114,8 @@
 
         // --- Logic: Copy to Clipboard ---
         function copyText(elementId, isTextContent = false) {
-            var text = isTextContent ? document.getElementById(elementId).innerText : document.getElementById(elementId).value;
+            var element = document.getElementById(elementId);
+            var text = isTextContent ? element.innerText : (element.value || element.textContent);
             navigator.clipboard.writeText(text).then(
                 () => showToast('Copied to clipboard!', 'success'),
                 () => showToast('Failed to copy', 'error')
@@ -1431,6 +1462,14 @@ Enjoy! 🚀
             }
         }
 
+        // --- HTML Escape Function for Prism.js ---
+        function escapeHtml(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         function displayGeneratedCode(data) {
             // ซ่อน empty state และแสดง result card
             var parentCol = document.querySelector('.col-md-8');
@@ -1446,7 +1485,7 @@ Enjoy! 🚀
                     <button type="button" class="btn btn-sm btn-dark" onclick="copyText('cliCommand', true)"><i class="fa-regular fa-copy"></i></button>
                 </div>        
 
-                <div class="card card-result shadow-sm h-100" style="margin-bottom: 10px;" id="resultCard">
+                <div class="card card-result shadow-sm h-75" style="margin-bottom: 10px;" id="resultCard">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span>ผลลัพธ์ ${data.entityName || ''}</span>
 
@@ -1478,34 +1517,37 @@ Enjoy! 🚀
                                 <a class="nav-link" data-bs-toggle="tab" href="#tab-css">CSS</a>
                             </li>
                         </ul>
-                        <div class="tab-content h-100">
+                        <div class="tab-content h-75">
                             <div class="tab-pane fade show active h-100" id="tab-html">
                                 <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeHtml')"><i class="fa-regular fa-copy"></i> Copy HTML</button>
-                                <textarea readonly="true" id="codeHtml" class="form-control border-0 h-100 font-monospace p-3 bg-light">${data.html || ''}</textarea>
+                                <pre class="h-100 m-0" style="overflow: auto;"><code id="codeHtml" class="language-markup">${escapeHtml(data.html)}</code></pre>
                             </div>
                             <div class="tab-pane fade h-100" id="tab-ts">
                                 <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeTs')"><i class="fa-regular fa-copy"></i> Copy TS</button>
-                                <textarea readonly="true" id="codeTs" class="form-control border-0 h-100 font-monospace p-3 bg-light">${data.ts || ''}</textarea>
+                                <pre class="h-100 m-0" style="overflow: auto;"><code id="codeTs" class="language-typescript">${escapeHtml(data.ts)}</code></pre>
                             </div>
                             <div class="tab-pane fade h-100" id="tab-svc">
                                 <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeSvc')"><i class="fa-regular fa-copy"></i> Copy Service</button>
-                                <textarea readonly="true" id="codeSvc" class="form-control border-0 h-100 font-monospace p-3 bg-light">${data.service || ''}</textarea>
+                                <pre class="h-100 m-0" style="overflow: auto;"><code id="codeSvc" class="language-typescript">${escapeHtml(data.service)}</code></pre>
                             </div>
                             <div class="tab-pane fade h-100" id="tab-interface">
                                 <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeInterface')"><i class="fa-regular fa-copy"></i> Copy Interface</button>
-                                <textarea readonly="true" id="codeInterface" class="form-control border-0 h-100 font-monospace p-3 bg-light">${data.interfaceCode || ''}</textarea>
+                                <pre class="h-100 m-0" style="overflow: auto;"><code id="codeInterface" class="language-typescript">${escapeHtml(data.interfaceCode)}</code></pre>
                             </div>
                             <div class="tab-pane fade h-100" id="tab-css">
                                 <button type="button" class="btn btn-secondary btn-sm copy-btn" onclick="copyText('codeCss')"><i class="fa-regular fa-copy"></i> Copy CSS</button>
-                                <textarea readonly="true" id="codeCss" class="form-control border-0 h-100 font-monospace p-3 bg-light">${data.css || ''}</textarea>
+                                <pre class="h-100 m-0" style="overflow: auto;"><code id="codeCss" class="language-css">${escapeHtml(data.css)}</code></pre>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
 
-            // Scroll to result
+            // Highlight code with Prism
             setTimeout(() => {
+                Prism.highlightAll();
+                
+                // Scroll to result
                 var resultCard = document.getElementById('resultCard');
                 if (resultCard) {
                     resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });

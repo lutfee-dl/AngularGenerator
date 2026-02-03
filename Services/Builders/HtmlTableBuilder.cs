@@ -213,8 +213,11 @@ namespace AngularGenerator.Services.Builders
                 var btnClass = framework == CSSFramework.Bootstrap ? "btn btn-sm btn-danger" : "btn btn-sm btn-delete";
                 sb.AppendLine($"                <button class=\"{btnClass}\" (click)=\"onDelete(item)\">Delete</button>");
             }
-            
+            if (_definition.IsGetById || _definition.IsUpdate || _definition.IsDelete)
+            {
             sb.AppendLine("              </td>");
+            }
+            
             sb.AppendLine("            </tr>");
             sb.AppendLine("          }");
             
