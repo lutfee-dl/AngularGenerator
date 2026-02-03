@@ -4,13 +4,23 @@ using AngularGenerator.Core.Models;
 
 namespace AngularGenerator.Services
 {
-    public class DbSchemaService
+    public class SqlServerSchemaService : IDbSchemaService
     {
         private readonly string _connString;
 
+        public DatabaseType DbType => DatabaseType.SqlServer;
         public string ConnectionString => _connString;
 
-        public DbSchemaService(IConfiguration config)
+        public SqlServerSchemaService(string connectionString)
+        {
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new InvalidOperationException("SQL Server Connection String is required");
+            }
+            _connString = connectionString;
+        }
+
+        public SqlServerSchemaService(IConfiguration config)
         {
             var conn = config.GetConnectionString("DefaultConnection");
             if (string.IsNullOrEmpty(conn))
@@ -28,9 +38,10 @@ namespace AngularGenerator.Services
                 conn.Open();
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                Console.WriteLine($"SQL Server Connection Error: {ex.Message}");
+                throw new InvalidOperationException($"Cannot connect to SQL Server: {ex.Message}", ex);
             }
         }
 
@@ -45,6 +56,19 @@ namespace AngularGenerator.Services
             {
                 return "Unknown";
             }
+        }
+
+        public IEnumerable<string> GetTables()
+        {
+            using var conn = new SqlConnection(_connString);
+            
+            string sql = @"
+                SELECT TABLE_NAME
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_TYPE = 'BASE TABLE'
+                ORDER BY TABLE_NAME";
+            
+            return conn.Query<string>(sql);
         }
 
         public IEnumerable<DbColumnInfo> GetSchema(string tableName)

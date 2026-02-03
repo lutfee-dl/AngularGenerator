@@ -8,7 +8,10 @@ builder.Services.AddControllersWithViews();
 // -------------------------------------------------------------
 // Register services - Now using Builder Pattern
 // -------------------------------------------------------------
-builder.Services.AddScoped<DbSchemaService>();
+// Register DbSchemaServiceFactory as Singleton
+builder.Services.AddSingleton<DbSchemaServiceFactory>();
+
+// Register other services
 builder.Services.AddScoped<AngularComponentFactory>();
 builder.Services.AddScoped<FullStackGenerator>();
 

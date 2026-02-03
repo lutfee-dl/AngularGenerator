@@ -8,12 +8,12 @@ namespace AngularGenerator.Services
     /// </summary>
     public class FullStackGenerator
     {
-        private readonly DbSchemaService _dbService;
+        private readonly DbSchemaServiceFactory _dbFactory;
         private readonly AngularComponentFactory _factory;
 
-        public FullStackGenerator(DbSchemaService db, AngularComponentFactory factory)
+        public FullStackGenerator(DbSchemaServiceFactory dbFactory, AngularComponentFactory factory)
         {
-            _dbService = db; 
+            _dbFactory = dbFactory; 
             _factory = factory;
         }
 
@@ -32,7 +32,7 @@ namespace AngularGenerator.Services
             bool separateInterface = false)
         {
             // 1. Get schema from database
-            var columns = _dbService.GetSchema(tableName);
+            var columns = _dbFactory.GetCurrentService().GetSchema(tableName);
             var fullModel = _factory.Create(tableName, columns);
 
             if (!string.IsNullOrEmpty(componentName))

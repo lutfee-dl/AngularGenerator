@@ -8,14 +8,14 @@ namespace AngularGenerator.Controllers
     public class GeneratorController : Controller
     {
         private readonly FullStackGenerator _generator;
-        private readonly DbSchemaService _dbService;
+        private readonly DbSchemaServiceFactory _dbFactory;
         private readonly AngularComponentFactory _factory;
         private readonly JsonSchemaService _jsonSchemaService;
 
-        public GeneratorController(FullStackGenerator generator, DbSchemaService dbService, AngularComponentFactory factory, JsonSchemaService jsonSchemaService)
+        public GeneratorController(FullStackGenerator generator, DbSchemaServiceFactory dbFactory, AngularComponentFactory factory, JsonSchemaService jsonSchemaService)
         {
             _generator = generator;
-            _dbService = dbService;
+            _dbFactory = dbFactory;
             _factory = factory;
             _jsonSchemaService = jsonSchemaService;
         }
@@ -43,7 +43,7 @@ namespace AngularGenerator.Controllers
                 if (string.IsNullOrEmpty(tableName)) 
                     return Json(new { success = false, message = "Table name is empty" });
                 
-                var columns = _dbService.GetSchema(tableName);
+                var columns = _dbFactory.GetCurrentService().GetSchema(tableName);
                 if (columns == null || !columns.Any()) 
                     return Json(new { success = false, message = "Table not found." });
 
@@ -57,15 +57,129 @@ namespace AngularGenerator.Controllers
         }
 
         [HttpGet]
+        public IActionResult GetTables()
+        {
+            try
+            {
+                var dbService = _dbFactory.GetCurrentService();
+                var tables = dbService.GetTables().ToList();
+                
+                return Json(new 
+                { 
+                    success = true, 
+                    tables = tables,
+                    databaseName = dbService.GetDatabaseName(),
+                    dbType = dbService.DbType.ToString()
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
         public IActionResult CheckDbConnection()
         {
             try 
             { 
-                return Json(new { success = _dbService.TestConnection() }); 
+                var dbService = _dbFactory.GetCurrentService();
+                return Json(new { success = dbService.TestConnection(), dbType = dbService.DbType.ToString(), databaseName = dbService.GetDatabaseName() }); 
             }
             catch (Exception ex) 
             { 
                 return Json(new { success = false, message = ex.Message }); 
+            }
+        }
+
+        [HttpPost]
+        public IActionResult TestConnection([FromBody] TestConnectionRequest request)
+        {
+            try
+            {
+                // Log for debugging
+                Console.WriteLine($"TestConnection: DbType={request.DbType}, ConnString={request.ConnectionString?.Substring(0, Math.Min(50, request.ConnectionString?.Length ?? 0))}...");
+
+                if (string.IsNullOrEmpty(request.ConnectionString))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Connection string is empty"
+                    });
+                }
+
+                // ใช้ TestConnectionOnly เพื่อไม่ให้เปลี่ยน database ปัจจุบัน
+                var service = _dbFactory.TestConnectionOnly(request.DbType, request.ConnectionString);
+                bool isConnected = service.TestConnection();
+
+                if (isConnected)
+                {
+                    var dbName = service.GetDatabaseName();
+                    Console.WriteLine($"Connection successful: {dbName}");
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Connection successful",
+                        databaseName = dbName
+                    });
+                }
+                else
+                {
+                    Console.WriteLine("Connection failed: TestConnection returned false");
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Connection failed - Unable to open connection"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"TestConnection Error: {ex.GetType().Name} - {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                return Json(new
+                {
+                    success = false,
+                    message = $"{ex.GetType().Name}: {ex.Message}"
+                });
+            }
+        }
+
+        [HttpPost]
+        public IActionResult SwitchDatabase([FromBody] TestConnectionRequest request)
+        {
+            try
+            {
+                // Create and test new service
+                var service = _dbFactory.CreateService(request.DbType, request.ConnectionString);
+                bool isConnected = service.TestConnection();
+
+                if (!isConnected)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Cannot connect to database"
+                    });
+                }
+
+                // Service is already switched in factory
+                return Json(new
+                {
+                    success = true,
+                    message = "Database switched successfully",
+                    databaseName = service.GetDatabaseName(),
+                    dbType = service.DbType.ToString()
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
             }
         }
 

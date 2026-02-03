@@ -256,3 +256,6 @@ D:\ProjectFinal\AngularGenerator\obj\Debug\net8.0\refint\Angular_Generate.dll
 D:\ProjectFinal\AngularGenerator\obj\Debug\net8.0\Angular_Generate.pdb
 D:\ProjectFinal\AngularGenerator\obj\Debug\net8.0\Angular_Generate.genruntimeconfig.cache
 D:\ProjectFinal\AngularGenerator\obj\Debug\net8.0\ref\Angular_Generate.dll
+D:\ProjectFinal\AngularGenerator\bin\Debug\net8.0\MySqlConnector.dll
+D:\ProjectFinal\AngularGenerator\bin\Debug\net8.0\Npgsql.dll
+D:\ProjectFinal\AngularGenerator\bin\Debug\net8.0\System.Diagnostics.DiagnosticSource.dll
