@@ -1,55 +1,46 @@
 using System.Text;
 using AngularGenerator.Core.Models;
+using AngularGenerator.Services.Builders.Strategies;
 
 namespace AngularGenerator.Services.Builders
 {
     /// <summary>
     /// Builder for Table View HTML with support for multiple CSS frameworks
+    /// Uses Strategy Pattern for framework-specific rendering
     /// </summary>
     public class HtmlTableBuilder
     {
         private readonly ComponentDefinition _definition;
+        private readonly ICssFrameworkRenderer _renderer;
         
         public HtmlTableBuilder(ComponentDefinition definition)
         {
             _definition = definition;
+            _renderer = CssRendererFactory.Create(definition.CssFramework);
         }
         
         public string Build()
         {
-            var framework = _definition.CssFramework;
             var sb = new StringBuilder();
             
             sb.AppendLine($"<!-- {_definition.EntityName} Component - Table View -->");
-            sb.AppendLine($"<!-- CSS Framework: {framework} -->");
+            sb.AppendLine($"<!-- CSS Framework: {_definition.CssFramework} -->");
             sb.AppendLine();
 
-            BuildHeader(sb, framework);
-            BuildLoadingIndicator(sb, framework);
-            BuildDataTable(sb, framework);
-            BuildModal(sb, framework);
+            BuildHeader(sb);
+            BuildLoadingIndicator(sb);
+            BuildDataTable(sb);
+            BuildModal(sb);
             
             sb.AppendLine("</div>");
             
             return sb.ToString();
         }
 
-        private void BuildHeader(StringBuilder sb, CSSFramework framework)
+        private void BuildHeader(StringBuilder sb)
         {
-            var containerClass = framework switch
-            {
-                CSSFramework.Bootstrap => "container mt-4",
-                CSSFramework.AngularMaterial => "container",
-                _ => "container"
-            };
-
-            var buttonClass = framework switch
-            {
-                CSSFramework.Bootstrap => "btn btn-primary",
-                CSSFramework.AngularMaterial => "mat-raised-button mat-primary",
-                _ => "btn btn-add"
-            };
-
+            var containerClass = _renderer.GetContainerClass();
+            
             sb.AppendLine($"<div class=\"{containerClass}\">");
             sb.AppendLine("  <div class=\"header-section\">");
             sb.AppendLine($"    <h2>{_definition.EntityName} Management</h2>");
@@ -58,16 +49,7 @@ namespace AngularGenerator.Services.Builders
             
             if (_definition.IsPost)
             {
-                if (framework == CSSFramework.AngularMaterial)
-                {
-                    sb.AppendLine("      <button mat-raised-button color=\"primary\" (click)=\"openCreate()\">");
-                    sb.AppendLine("        <mat-icon>add</mat-icon> Add New");
-                    sb.AppendLine("      </button>");
-                }
-                else
-                {
-                    sb.AppendLine($"      <button class=\"{buttonClass}\" (click)=\"openCreate()\">+ Add New</button>");
-                }
+                sb.AppendLine(_renderer.RenderButton("Add New", "openCreate()", "add"));
             }
             
             sb.AppendLine("    </div>");
@@ -75,7 +57,7 @@ namespace AngularGenerator.Services.Builders
             sb.AppendLine();
         }
 
-        private void BuildLoadingIndicator(StringBuilder sb, CSSFramework framework)
+        private void BuildLoadingIndicator(StringBuilder sb)
         {
             if (_definition.IsPost || _definition.IsUpdate)
             {
@@ -90,11 +72,11 @@ namespace AngularGenerator.Services.Builders
             sb.AppendLine();
         }
 
-        private void BuildDataTable(StringBuilder sb, CSSFramework framework)
+        private void BuildDataTable(StringBuilder sb)
         {
             sb.AppendLine("  @if (!isLoading() || dataList().length > 0) {");
             
-            if (framework == CSSFramework.AngularMaterial)
+            if (_renderer.RequiresSpecialTableRendering())
             {
                 sb.AppendLine("    <div class=\"mat-elevation-z2\">");
                 BuildMaterialTable(sb);
@@ -103,7 +85,7 @@ namespace AngularGenerator.Services.Builders
             else
             {
                 sb.AppendLine("    <div class=\"table-responsive\">");
-                BuildStandardTable(sb, framework);
+                BuildStandardTable(sb);
                 sb.AppendLine("    </div>");
             }
             
@@ -111,15 +93,11 @@ namespace AngularGenerator.Services.Builders
             sb.AppendLine();
         }
 
-        private void BuildStandardTable(StringBuilder sb, CSSFramework framework)
+        private void BuildStandardTable(StringBuilder sb)
         {
-            var tableClass = framework == CSSFramework.Bootstrap 
-                ? "table table-striped table-hover" 
-                : "table";
-
             var primaryKey = _definition.Fields.FirstOrDefault(f => f.IsPrimaryKey)?.FieldName ?? "id";
 
-            sb.AppendLine($"      <table class=\"{tableClass}\">");
+            sb.AppendLine($"      <table class=\"{_renderer.GetTableClass()}\">");
             sb.AppendLine("        <thead>");
             sb.AppendLine("          <tr>");
             
@@ -177,14 +155,11 @@ namespace AngularGenerator.Services.Builders
                 var checkboxField = _definition.Fields.FirstOrDefault(f => f.UIControl == ControlType.Checkbox);
                 if (checkboxField != null)
                 {
-                    var badgeActiveClass = framework == CSSFramework.Bootstrap ? "badge bg-success" : "badge badge-active";
-                    var badgeInactiveClass = framework == CSSFramework.Bootstrap ? "badge bg-danger" : "badge badge-inactive";
-                    
                     sb.AppendLine("              <td class=\"text-center\">");
                     sb.AppendLine($"                @if ($any(item)['{checkboxField.FieldName}']) {{");
-                    sb.AppendLine($"                  <span class=\"{badgeInactiveClass}\">Inactive</span>");
+                    sb.AppendLine($"                  <span class=\"{_renderer.GetBadgeClass(false)}\">Inactive</span>");
                     sb.AppendLine("                } @else {");
-                    sb.AppendLine($"                  <span class=\"{badgeActiveClass}\">Active</span>");
+                    sb.AppendLine($"                  <span class=\"{_renderer.GetBadgeClass(true)}\">Active</span>");
                     sb.AppendLine("                }");
                     sb.AppendLine("              </td>");
                 }
@@ -198,20 +173,17 @@ namespace AngularGenerator.Services.Builders
             
             if (_definition.IsGet && _definition.IsGetById)
             {
-                var btnClass = framework == CSSFramework.Bootstrap ? "btn btn-sm btn-info" : "btn btn-sm btn-info";
-                sb.AppendLine($"                <button class=\"{btnClass}\" (click)=\"openDetail(item)\">View</button>");
+                sb.AppendLine($"                <button class=\"{_renderer.GetButtonClass("info")}\" (click)=\"openDetail(item)\">View</button>");
             }
             
             if (_definition.IsUpdate)
             {
-                var btnClass = framework == CSSFramework.Bootstrap ? "btn btn-sm btn-warning" : "btn btn-sm btn-edit";
-                sb.AppendLine($"                <button class=\"{btnClass}\" (click)=\"openEdit(item)\">Edit</button>");
+                sb.AppendLine($"                <button class=\"{_renderer.GetButtonClass("warning")}\" (click)=\"openEdit(item)\">Edit</button>");
             }
             
             if (_definition.IsDelete)
             {
-                var btnClass = framework == CSSFramework.Bootstrap ? "btn btn-sm btn-danger" : "btn btn-sm btn-delete";
-                sb.AppendLine($"                <button class=\"{btnClass}\" (click)=\"onDelete(item)\">Delete</button>");
+                sb.AppendLine($"                <button class=\"{_renderer.GetButtonClass("danger")}\" (click)=\"onDelete(item)\">Delete</button>");
             }
             if (_definition.IsGetById || _definition.IsUpdate || _definition.IsDelete)
             {
@@ -326,7 +298,7 @@ namespace AngularGenerator.Services.Builders
             sb.AppendLine("    </table>");
         }
 
-        private void BuildModal(StringBuilder sb, CSSFramework framework)
+        private void BuildModal(StringBuilder sb)
         {
             if (!_definition.IsPost && !_definition.IsUpdate && !_definition.IsGetById) return;
 
@@ -364,23 +336,7 @@ namespace AngularGenerator.Services.Builders
             
             // Other input types - with framework-specific styling
             sb.AppendLine("                } @else {");
-            
-            if (framework == CSSFramework.AngularMaterial)
-            {
-                sb.AppendLine("                  <mat-form-field appearance=\"outline\" class=\"w-100\">");
-                sb.AppendLine("                    <input matInput [type]=\"field.type\"");
-                sb.AppendLine("                           [formControlName]=\"field.key\"");
-                sb.AppendLine("                           [attr.maxlength]=\"field.maxLength\">");
-                sb.AppendLine("                  </mat-form-field>");
-            }
-            else
-            {
-                var inputClass = framework == CSSFramework.Bootstrap ? "form-control" : "form-control";
-                sb.AppendLine($"                  <input [type]=\"field.type\"");
-                sb.AppendLine("                         [formControlName]=\"field.key\"");
-                sb.AppendLine($"                         class=\"{inputClass}\"");
-                sb.AppendLine("                         [attr.maxlength]=\"field.maxLength\">");
-            }
+            sb.AppendLine("                  " + _renderer.RenderFormInput("field.key", "field.type", null).Replace("\n", "\n                  "));
             
             sb.AppendLine("                }");
             sb.AppendLine("              </div>");

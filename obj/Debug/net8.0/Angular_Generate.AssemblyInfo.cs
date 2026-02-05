@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Angular_Generate")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+17896f7f70f1738c8cdcaf4252f48ad19b4f119a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2f5d4e05d2c933e75c1c6d4d0a4b14f510d96ad9")]
 [assembly: System.Reflection.AssemblyProductAttribute("Angular_Generate")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Angular_Generate")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

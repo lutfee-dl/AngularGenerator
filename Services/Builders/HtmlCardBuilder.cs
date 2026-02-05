@@ -1,19 +1,23 @@
 ﻿using AngularGenerator.Core.Models;
 using System.Text;
+using AngularGenerator.Services.Builders.Strategies;
 
 namespace AngularGenerator.Services.Builders
 {
     /// <summary>
     /// Builder สำหรบสราง HTML แบบ Card View (Grid Layout)
+    /// Uses Strategy Pattern for framework-specific rendering
     /// </summary>
     public class HtmlCardBuilder
     {
         private readonly ComponentDefinition _definition;
         private readonly StringBuilder _sb = new();
+        private readonly ICssFrameworkRenderer _renderer;
         
         public HtmlCardBuilder(ComponentDefinition definition)
         {
             _definition = definition;
+            _renderer = CssRendererFactory.Create(definition.CssFramework);
         }
         
         public string Build()
@@ -33,8 +37,6 @@ namespace AngularGenerator.Services.Builders
         
         private void BuildHeader()
         {
-            var framework = _definition.CssFramework;
-            
             _sb.AppendLine("  <div class=\"header-section\">");
             _sb.AppendLine($"    <h2>{_definition.EntityName} management</h2>");
             _sb.AppendLine("    <div class=\"header-actions\">");
@@ -45,21 +47,7 @@ namespace AngularGenerator.Services.Builders
             
             if (_definition.IsPost)
             {
-                if (framework == CSSFramework.AngularMaterial)
-                {
-                    _sb.AppendLine("      <button mat-raised-button color=\"primary\" (click)=\"openCreate()\">");
-                    _sb.AppendLine("        <mat-icon>add</mat-icon>");
-                    _sb.AppendLine($"        New {_definition.EntityName}");
-                    _sb.AppendLine("      </button>");
-                }
-                else if (framework == CSSFramework.Bootstrap)
-                {
-                    _sb.AppendLine($"      <button class=\"btn btn-primary\" (click)=\"openCreate()\">+ New {_definition.EntityName}</button>");
-                }
-                else
-                {
-                    _sb.AppendLine($"      <button class=\"btn btn-add\" (click)=\"openCreate()\">+ New {_definition.EntityName}</button>");
-                }
+                _sb.AppendLine(_renderer.RenderButton($"New {_definition.EntityName}", "openCreate()", "add"));
             }
             
             _sb.AppendLine("    </div>");
@@ -86,14 +74,12 @@ namespace AngularGenerator.Services.Builders
         
         private void BuildCardGrid(string primaryKey, bool hasCheckbox)
         {
-            var framework = _definition.CssFramework;
-            
             _sb.AppendLine("  @if (!isLoading()) {");
             _sb.AppendLine("    ");
             _sb.AppendLine("    <div class=\"product-grid\">");
             _sb.AppendLine($"      @for (item of filteredList(); track item.{primaryKey}) {{");
             
-            if (framework == CSSFramework.AngularMaterial)
+            if (_renderer.RequiresSpecialTableRendering())
             {
                 BuildMaterialCard(primaryKey, hasCheckbox);
             }
@@ -246,43 +232,21 @@ namespace AngularGenerator.Services.Builders
             _sb.AppendLine();
             
             // Card Footer with Actions
-            var framework = _definition.CssFramework;
             _sb.AppendLine("          <div class=\"card-footer\">");
             
             if (_definition.IsGetById)
             {
-                if (framework == CSSFramework.Bootstrap)
-                {
-                    _sb.AppendLine("             <button class=\"btn btn-sm btn-info\" (click)=\"openDetail(item)\">View</button>");
-                }
-                else
-                {
-                    _sb.AppendLine("             <button class=\"btn btn-primary view\" (click)=\"openDetail(item)\" title=\"View\">View</button>");
-                }
+                _sb.AppendLine($"             <button class=\"{_renderer.GetButtonClass("info")}\" (click)=\"openDetail(item)\">View</button>");
             }
             
             if (_definition.IsUpdate)
             {
-                if (framework == CSSFramework.Bootstrap)
-                {
-                    _sb.AppendLine("             <button class=\"btn btn-sm btn-warning\" (click)=\"openEdit(item)\">Edit</button>");
-                }
-                else
-                {
-                    _sb.AppendLine("             <button class=\"btn btn-warning edit\" (click)=\"openEdit(item)\" title=\"Edit\">Edit</button>");
-                }
+                _sb.AppendLine($"             <button class=\"{_renderer.GetButtonClass("warning")}\" (click)=\"openEdit(item)\">Edit</button>");
             }
             
             if (_definition.IsDelete)
             {
-                if (framework == CSSFramework.Bootstrap)
-                {
-                    _sb.AppendLine("             <button class=\"btn btn-sm btn-danger\" (click)=\"onDelete(item)\">Delete</button>");
-                }
-                else
-                {
-                    _sb.AppendLine("             <button class=\"btn btn-danger delete\" (click)=\"onDelete(item)\" title=\"Delete\">Delete</button>");
-                }
+                _sb.AppendLine($"             <button class=\"{_renderer.GetButtonClass("danger")}\" (click)=\"onDelete(item)\">Delete</button>");
             }
             
             _sb.AppendLine("          </div>");

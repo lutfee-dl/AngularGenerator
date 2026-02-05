@@ -1,14 +1,17 @@
 using System.Text;
 using AngularGenerator.Core.Models;
+using AngularGenerator.Services.Builders.Strategies;
 
 namespace AngularGenerator.Services.Builders
 {
     /// <summary>
     /// Builder for TypeScript component code using fluent API
+    /// Uses Strategy Pattern for framework-specific imports
     /// </summary>
     public class TypeScriptBuilder : ICodeBuilder<TypeScriptBuilder>
     {
         private readonly ComponentDefinition _definition;
+        private readonly ICssFrameworkRenderer _renderer;
         private readonly List<ImportSegment> _imports = new();
         private readonly List<PropertySegment> _properties = new();
         private readonly List<MethodSegment> _methods = new();
@@ -17,6 +20,7 @@ namespace AngularGenerator.Services.Builders
         public TypeScriptBuilder(ComponentDefinition definition)
         {
             _definition = definition;
+            _renderer = CssRendererFactory.Create(definition.CssFramework);
             InitializeDefaults();
         }
         
@@ -36,28 +40,34 @@ namespace AngularGenerator.Services.Builders
             // Default component decorator
             _componentDecorator.Add($"selector: '{_definition.Selector}'");
             _componentDecorator.Add("standalone: true");
-            _componentDecorator.Add("imports: [CommonModule, FormsModule]");
             _componentDecorator.Add($"templateUrl: './{_definition.EntityName.ToLower()}.html'");
             _componentDecorator.Add($"styleUrls: ['./{_definition.EntityName.ToLower()}.css']");            
+            
             // Add Material imports if using Angular Material
-            if (_definition.CssFramework == CSSFramework.AngularMaterial)
+            var frameworkImports = _renderer.GetRequiredImports();
+            if (frameworkImports.Length > 0)
             {
-                AddImport(new[] { "MatTableModule" }, "@angular/material/table");
-                AddImport(new[] { "MatButtonModule" }, "@angular/material/button");
-                AddImport(new[] { "MatIconModule" }, "@angular/material/icon");
-                AddImport(new[] { "MatFormFieldModule" }, "@angular/material/form-field");
-                AddImport(new[] { "MatInputModule" }, "@angular/material/input");
-                AddImport(new[] { "MatChipsModule" }, "@angular/material/chips");
-                AddImport(new[] { "MatTooltipModule" }, "@angular/material/tooltip");
-                AddImport(new[] { "MatSortModule" }, "@angular/material/sort");
-                AddImport(new[] { "MatCardModule" }, "@angular/material/card");
-                
-                var importsLine = _componentDecorator.FirstOrDefault(x => x.StartsWith("imports:"));
-                if (importsLine != null)
+                foreach (var import in frameworkImports)
                 {
-                    _componentDecorator.Remove(importsLine);
-                    _componentDecorator.Add("imports: [CommonModule, FormsModule, MatTableModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatChipsModule, MatTooltipModule, MatSortModule, MatCardModule]");
+                    var module = import;
+                    var from = $"@angular/material/{module.Replace("Module", "").Replace("Mat", "").ToLower()}";
+                    if (module == "MatTableModule") from = "@angular/material/table";
+                    else if (module == "MatButtonModule") from = "@angular/material/button";
+                    else if (module == "MatIconModule") from = "@angular/material/icon";
+                    else if (module == "MatFormFieldModule") from = "@angular/material/form-field";
+                    else if (module == "MatInputModule") from = "@angular/material/input";
+                    else if (module == "MatChipsModule") from = "@angular/material/chips";
+                    else if (module == "MatTooltipModule") from = "@angular/material/tooltip";
+                    else if (module == "MatSortModule") from = "@angular/material/sort";
+                    else if (module == "MatCardModule") from = "@angular/material/card";
+                    AddImport(new[] { module }, from);
                 }
+                
+                _componentDecorator.Add(_renderer.GetImportsDeclaration());
+            }
+            else
+            {
+                _componentDecorator.Add("imports: [CommonModule, FormsModule]");
             }
         }
         
@@ -88,15 +98,7 @@ namespace AngularGenerator.Services.Builders
             if (importsLine != null)
             {
                 _componentDecorator.Remove(importsLine);
-                
-                if (_definition.CssFramework == CSSFramework.AngularMaterial)
-                {
-                    _componentDecorator.Add("imports: [CommonModule, ReactiveFormsModule, FormsModule, MatTableModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule]");
-                }
-                else
-                {
-                    _componentDecorator.Add("imports: [CommonModule, ReactiveFormsModule, FormsModule]");
-                }
+                _componentDecorator.Add(_renderer.GetImportsDeclaration().Replace("FormsModule", "ReactiveFormsModule, FormsModule"));
             }
             
             // Add FormBuilder injection
@@ -147,7 +149,7 @@ namespace AngularGenerator.Services.Builders
             });
             
             // Add displayedColumns for Material Table
-            if (_definition.CssFramework == CSSFramework.AngularMaterial)
+            if (_renderer.RequiresSpecialTableRendering())
             {
                 var pkField = _definition.Fields.FirstOrDefault(f => f.IsPrimaryKey)?.FieldName ?? "id";
                 var hasCheckbox = _definition.Fields.Any(f => f.UIControl == ControlType.Checkbox);
