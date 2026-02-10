@@ -1,41 +1,35 @@
 ﻿using AngularGenerator.Core.Models;
-using System.Text;
+using AngularGenerator.Services.Builders.Base;
 using AngularGenerator.Services.Builders.Strategies;
 
 namespace AngularGenerator.Services.Builders
 {
     /// <summary>
-    /// Builder สำหรบสราง HTML แบบ Card View (Grid Layout)
+    /// Builder for Card View HTML - Now using OOP inheritance
+    /// Extends BaseHtmlBuilder to eliminate code duplication
     /// Uses Strategy Pattern for framework-specific rendering
     /// </summary>
-    public class HtmlCardBuilder
+    public class HtmlCardBuilder : BaseHtmlBuilder
     {
-        private readonly ComponentDefinition _definition;
-        private readonly StringBuilder _sb = new();
         private readonly ICssFrameworkRenderer _renderer;
         
-        public HtmlCardBuilder(ComponentDefinition definition)
+        public HtmlCardBuilder(ComponentDefinition definition) : base(definition)
         {
-            _definition = definition;
             _renderer = CssRendererFactory.Create(definition.CssFramework);
         }
-        
-        public string Build()
+
+        /// <summary>
+        /// Override container for Card view (different styling)
+        /// </summary>
+        protected override void BuildContainer()
         {
-            var primaryKey = _definition.PrimaryKeyName;
-            var hasCheckbox = _definition.Fields.Any(f => f.UIControl == ControlType.Checkbox);
-            
             _sb.AppendLine("<div class=\"container\">");
-            BuildHeader();
-            BuildLoadingIndicator();
-            BuildCardGrid(primaryKey, hasCheckbox);
-            BuildModal();
-            _sb.AppendLine("</div>");
-            
-            return _sb.ToString();
         }
-        
-        private void BuildHeader()
+
+        /// <summary>
+        /// Override header for Card view (simpler header)
+        /// </summary>
+        protected override void BuildHeader()
         {
             _sb.AppendLine("  <div class=\"header-section\">");
             _sb.AppendLine($"    <h2>{_definition.EntityName} management</h2>");
@@ -54,8 +48,11 @@ namespace AngularGenerator.Services.Builders
             _sb.AppendLine("  </div>");
             _sb.AppendLine();
         }
-        
-        private void BuildLoadingIndicator()
+
+        /// <summary>
+        /// Override loading indicator for Card view
+        /// </summary>
+        protected override void BuildLoadingIndicator()
         {
             if (_definition.IsPost || _definition.IsUpdate || _definition.IsGetById)
             {
@@ -71,9 +68,16 @@ namespace AngularGenerator.Services.Builders
             _sb.AppendLine("  }");
             _sb.AppendLine();
         }
-        
-        private void BuildCardGrid(string primaryKey, bool hasCheckbox)
+
+        /// <summary>
+        /// Implements abstract method from BaseHtmlBuilder
+        /// Builds the card-specific data section
+        /// </summary>
+        protected override void BuildDataSection()
         {
+            var primaryKey = _definition.PrimaryKeyName;
+            var hasCheckbox = _definition.Fields.Any(f => f.UIControl == ControlType.Checkbox);
+            
             _sb.AppendLine("  @if (!isLoading()) {");
             _sb.AppendLine("    ");
             _sb.AppendLine("    <div class=\"product-grid\">");
@@ -251,111 +255,6 @@ namespace AngularGenerator.Services.Builders
             
             _sb.AppendLine("          </div>");
             _sb.AppendLine("        </div>");
-            _sb.AppendLine("      }");
-            _sb.AppendLine("    </div>");
-            _sb.AppendLine();
-            _sb.AppendLine("    @if(filteredList().length === 0) {");
-            _sb.AppendLine("        <div class=\"empty-state\">");
-            _sb.AppendLine("            <p>No data found matching your search.</p>");
-            _sb.AppendLine("        </div>");
-            _sb.AppendLine("    }");
-            _sb.AppendLine("  }");
-        }
-        
-        private void BuildModal()
-        {
-            if (!_definition.IsPost && !_definition.IsUpdate && !_definition.IsGetById) return;
-            
-            _sb.AppendLine();
-            _sb.AppendLine("@if (showModal()) {");
-            _sb.AppendLine("  <div class=\"modal-backdrop\">");
-            _sb.AppendLine("    <div class=\"modal-content\">");
-            _sb.AppendLine("      <div class=\"modal-header\">");
-            _sb.AppendLine("        <h3>");
-            _sb.AppendLine($"          @if(isViewMode()) {{ {_definition.EntityName} Details }}");
-            _sb.AppendLine($"          @else if(isEditMode()) {{ Edit {_definition.EntityName} }}");
-            _sb.AppendLine($"          @else {{ New {_definition.EntityName} }}");
-            _sb.AppendLine("        </h3>");
-            _sb.AppendLine("        <button class=\"btn-close-icon\" (click)=\"onClose()\"></button>");
-            _sb.AppendLine("      </div>");
-            _sb.AppendLine("      ");
-            _sb.AppendLine($"      <form [formGroup]=\"{_definition.EntityName.ToLower()}Form\" (ngSubmit)=\"onSubmit()\">");
-            _sb.AppendLine("        <div class=\"form-grid\">");
-            _sb.AppendLine("          @for (field of formFields; track field.key) {");
-            _sb.AppendLine("            <div class=\"form-group\" [class.full-width]=\"field.type === 'checkbox'\">");
-            _sb.AppendLine("              <label>{{ field.label }} ");
-            _sb.AppendLine("                @if(field.required && !isViewMode()){ <span class=\"required\">*</span> }");
-            _sb.AppendLine("              </label>");
-            _sb.AppendLine();
-            _sb.AppendLine("              @if (field.type === 'checkbox') {");
-            _sb.AppendLine("                <div class=\"checkbox-wrapper\">");
-            _sb.AppendLine("                  <input type=\"checkbox\" [formControlName]=\"field.key\"> ");
-            _sb.AppendLine("                  <span>Yes / No</span>");
-            _sb.AppendLine("                </div>");
-            _sb.AppendLine("              } @else {");
-            _sb.AppendLine("                <input [type]=\"field.type\" ");
-            _sb.AppendLine("                       [formControlName]=\"field.key\" ");
-            _sb.AppendLine("                       class=\"form-control\"");
-            _sb.AppendLine($"                       [class.is-invalid]=\"{_definition.EntityName.ToLower()}Form.get(field.key)?.invalid && {_definition.EntityName.ToLower()}Form.get(field.key)?.touched\">");
-            _sb.AppendLine("              }");
-            _sb.AppendLine("            </div>");
-            _sb.AppendLine("          }");
-            _sb.AppendLine("        </div>");
-            _sb.AppendLine();
-            var framework = _definition.CssFramework;
-            _sb.AppendLine("        <div class=\"modal-actions\">");
-            
-            if (framework == CSSFramework.AngularMaterial)
-            {
-                _sb.AppendLine("          <button type=\"button\" mat-button (click)=\"onClose()\">Cancel</button>");
-                
-                if (_definition.IsGetById)
-                {
-                    _sb.AppendLine("          @if (isViewMode()) {");
-                    _sb.AppendLine("            <button type=\"button\" mat-raised-button color=\"primary\" (click)=\"enableEditMode()\">Edit</button>");
-                    _sb.AppendLine("          }");
-                }
-                
-                _sb.AppendLine("          @if(!isViewMode()) {");
-                _sb.AppendLine($"            <button type=\"submit\" mat-raised-button color=\"primary\" [disabled]=\"{_definition.EntityName.ToLower()}Form.invalid\">Save</button>");
-                _sb.AppendLine("          }");
-            }
-            else if (framework == CSSFramework.Bootstrap)
-            {
-                _sb.AppendLine("          <button type=\"button\" class=\"btn btn-secondary\" (click)=\"onClose()\">Cancel</button>");
-                
-                if (_definition.IsGetById)
-                {
-                    _sb.AppendLine("          @if (isViewMode()) {");
-                    _sb.AppendLine("            <button type=\"button\" class=\"btn btn-warning\" (click)=\"enableEditMode()\">Edit</button>");
-                    _sb.AppendLine("          }");
-                }
-                
-                _sb.AppendLine("          @if(!isViewMode()) {");
-                _sb.AppendLine($"            <button type=\"submit\" class=\"btn btn-success\" [disabled]=\"{_definition.EntityName.ToLower()}Form.invalid\">Save</button>");
-                _sb.AppendLine("          }");
-            }
-            else
-            {
-                _sb.AppendLine("          <button type=\"button\" class=\"btn btn-secondary\" (click)=\"onClose()\">Cancel</button>");
-                
-                if (_definition.IsGetById)
-                {
-                    _sb.AppendLine("          @if (isViewMode()) {");
-                    _sb.AppendLine("            <button type=\"button\" class=\"btn btn-edit\" (click)=\"enableEditMode()\">Edit</button>");
-                    _sb.AppendLine("          }");
-                }
-                
-                _sb.AppendLine("          @if(!isViewMode()) {");
-                _sb.AppendLine($"            <button type=\"submit\" class=\"btn btn-success\" [disabled]=\"{_definition.EntityName.ToLower()}Form.invalid\">Save</button>");
-                _sb.AppendLine("          }");
-            }
-            
-            _sb.AppendLine("        </div>");
-            _sb.AppendLine("      </form>");
-            _sb.AppendLine("    </div>");
-            _sb.AppendLine("  </div>");
-            _sb.AppendLine("}");
         }
     }
 }

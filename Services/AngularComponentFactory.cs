@@ -16,17 +16,15 @@ namespace AngularGenerator.Services
             {
                 var field = new AngularField
                 {
-                    FieldName = col.ColumnName, // ใช้ PascalCase ตามชื่อคอลัมน์เดิม
+                    FieldName = col.ColumnName,
                     Label = col.ColumnName,
                     IsRequired = col.IsNullable == "NO",
-                    // ใช้ข้อมูล IsPrimaryKey จาก Database จริง (จาก INFORMATION_SCHEMA)
                     IsPrimaryKey = col.IsPrimaryKey
                 };
 
                 // Logic การเลือก UI Control ตาม Type (Strategy Logic)
                 MapType(col.DataType, field);
 
-                // ตั้งค่า Primary Key Name (เลือก PK แรกที่เจอ)
                 if (field.IsPrimaryKey && string.IsNullOrEmpty(def.PrimaryKeyName))
                 {
                     def.PrimaryKeyName = field.FieldName;
@@ -35,7 +33,6 @@ namespace AngularGenerator.Services
                 def.Fields.Add(field);
             }
             
-            // Fallback: ถ้าไม่มี Primary Key ใน Database → หาคอลัมน์ที่มี "Key" หรือ "ID" ในชื่อ
             if (string.IsNullOrEmpty(def.PrimaryKeyName) || def.PrimaryKeyName == "id")
             {
                 var keyField = def.Fields.FirstOrDefault(f => 
@@ -46,7 +43,7 @@ namespace AngularGenerator.Services
                 if (keyField != null)
                 {
                     def.PrimaryKeyName = keyField.FieldName;
-                    keyField.IsPrimaryKey = true; // ตั้งเป็น PK ด้วย
+                    keyField.IsPrimaryKey = true;
                 }
             }
             

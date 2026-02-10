@@ -132,12 +132,11 @@ namespace AngularGenerator.Services.Builders
         {
             if (_definition.CssFramework != CSSFramework.BasicCSS)
             {
-                return string.Empty; // Bootstrap และ Material ใช้ CSS จาก library
+                return string.Empty; 
             }
 
             _cssBuilder = new CssBuilder(_definition);
             
-            // เพิ่ม CSS ตาม Layout Type
             if (_definition.LayoutType == UILayoutType.CardView)
             {
                 _cssBuilder
@@ -146,7 +145,7 @@ namespace AngularGenerator.Services.Builders
                     .WithFormStyles()
                     .WithModalStyles();
             }
-            else // TableView
+            else
             {
                 _cssBuilder
                     .WithTableStyles()
