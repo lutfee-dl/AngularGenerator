@@ -98,7 +98,17 @@ namespace AngularGenerator.Services.Builders
             if (importsLine != null)
             {
                 _componentDecorator.Remove(importsLine);
-                _componentDecorator.Add(_renderer.GetImportsDeclaration().Replace("FormsModule", "ReactiveFormsModule, FormsModule"));
+                
+                // ตรวจสอบว่ามี ReactiveFormsModule อยู่แล้วหรือยัง
+                var baseImports = _renderer.GetImportsDeclaration();
+                if (!baseImports.Contains("ReactiveFormsModule"))
+                {
+                    // Replace "FormsModule" ด้วย "ReactiveFormsModule, FormsModule" เฉพาะตอนท้าย
+                    baseImports = baseImports.Replace(", FormsModule]", ", ReactiveFormsModule, FormsModule]")
+                                             .Replace("[FormsModule]", "[ReactiveFormsModule, FormsModule]")
+                                             .Replace("[CommonModule, FormsModule", "[CommonModule, ReactiveFormsModule, FormsModule");
+                }
+                _componentDecorator.Add(baseImports);
             }
             
             // Add FormBuilder injection
@@ -237,7 +247,7 @@ namespace AngularGenerator.Services.Builders
                 AccessModifier = "public"
             });
             
-            // Computed filtered list
+            // Computed filtered list with pagination
             var filterLogic = new List<string>
             {
                 "let data = [...this.dataList()];",
@@ -245,12 +255,13 @@ namespace AngularGenerator.Services.Builders
                 "const col = this.sortColumn();",
                 "const dir = this.sortDirection();",
                 "",
+                "// 1. Filter (ปรับให้ค้นหาครอบคลุมขึ้น)",
                 "if (term) {",
-                $"  const firstFieldKey = this.formFields[0].key as keyof {_definition.EntityName}Model;",
-                "  data = data.filter(item => {",
-                "      const val = item[firstFieldKey];",
-                "      return val ? String(val).toLowerCase().includes(term) : false;",
-                "    });",
+                "  data = data.filter(item => ",
+                "    Object.values(item).some(val => ",
+                "      String(val).toLowerCase().includes(term)",
+                "    )",
+                "  );",
                 "}",
                 "",
                 "// 2. Sort",
@@ -265,7 +276,10 @@ namespace AngularGenerator.Services.Builders
                 "    return 0;",
                 "  });",
                 "}",
-                "return data;"
+                "",
+                "// 3. Pagination Logic",
+                "const startIndex = (this.currentPage() - 1) * this.pageSize();",
+                "return data.slice(startIndex, startIndex + this.pageSize());"
             };
             
             AddProperty(new PropertySegment
@@ -273,6 +287,68 @@ namespace AngularGenerator.Services.Builders
                 Name = "filteredList",
                 Type = "",
                 InitialValue = "computed(() => {\n    " + string.Join("\n    ", filterLogic) + "\n  })",
+                AccessModifier = "public"
+            });
+            
+            // Pagination properties
+            AddProperty(new PropertySegment
+            {
+                Name = "currentPage",
+                Type = "number",
+                InitialValue = "signal<number>(1)",
+                IsSignal = false,
+                AccessModifier = "public"
+            });
+            
+            AddProperty(new PropertySegment
+            {
+                Name = "pageSize",
+                Type = "number",
+                InitialValue = "signal<number>(20)",
+                IsSignal = false,
+                AccessModifier = "public"
+            });
+            
+            // Add setPageSize method
+            AddMethod(new MethodSegment
+            {
+                Name = "setPageSize",
+                Parameters = new List<string> { "size: number" },
+                ReturnType = "void",
+                BodyLines = new List<string>
+                {
+                    "this.pageSize.set(size);",
+                    "this.currentPage.set(1);"
+                },
+                AccessModifier = "public"
+            });
+            
+            // Add totalPages computed
+            AddProperty(new PropertySegment
+            {
+                Name = "totalPages",
+                Type = "",
+                InitialValue = @"computed(() => {
+  const count = this.searchTerm() 
+    ? this.dataList().filter(item => Object.values(item).some(v => String(v).toLowerCase().includes(this.searchTerm().toLowerCase()))).length
+    : this.dataList().length;
+  return Math.ceil(count / this.pageSize());
+  })",
+                AccessModifier = "public"
+            });
+            
+            // Add setPage method
+            AddMethod(new MethodSegment
+            {
+                Name = "setPage",
+                Parameters = new List<string> { "page: number" },
+                ReturnType = "void",
+                BodyLines = new List<string>
+                {
+                    "if (page >= 1 && page <= this.totalPages()) {",
+                    "  this.currentPage.set(page);",
+                    "}"
+                },
                 AccessModifier = "public"
             });
             
@@ -679,23 +755,28 @@ namespace AngularGenerator.Services.Builders
         
         public TypeScriptBuilder WithNgOnInit()
         {
-            var initLines = new List<string>();
+            var constructorLines = new List<string>();
             
             if (_definition.IsPost || _definition.IsUpdate)
-                initLines.Add("this.initForm();");
+                constructorLines.Add("this.initForm();");
             
             if (_definition.IsGet)
-                initLines.Add("this.loadData();");
+                constructorLines.Add("this.loadData();");
             
-            var constructorMethod = new MethodSegment
+            // Only add constructor if there are lines to execute
+            if (constructorLines.Any())
             {
-                Name = "constructor",
-                BodyLines = initLines
-            };
+                var constructorMethod = new MethodSegment
+                {
+                    Name = "constructor",
+                    BodyLines = constructorLines,
+                    AccessModifier = "public"
+                };
+                
+                AddMethod(constructorMethod);
+            }
             
-            AddMethod(constructorMethod);
-            
-            // Add ngOnInit
+            // Add empty ngOnInit
             AddMethod(new MethodSegment
             {
                 Name = "ngOnInit",

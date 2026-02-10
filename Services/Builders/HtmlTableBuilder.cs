@@ -31,27 +31,28 @@ namespace AngularGenerator.Services.Builders
             BuildLoadingIndicator(sb);
             BuildDataTable(sb);
             BuildModal(sb);
-            
-            sb.AppendLine("</div>");
-            
+                        
             return sb.ToString();
         }
 
         private void BuildHeader(StringBuilder sb)
         {
-            var containerClass = _renderer.GetContainerClass();
-            
-            sb.AppendLine($"<div class=\"{containerClass}\">");
-            sb.AppendLine("  <div class=\"header-section\">");
-            sb.AppendLine($"    <h2>{_definition.EntityName} Management</h2>");
-            sb.AppendLine("    <div class=\"header-actions\">");
-            sb.AppendLine("      <input type=\"text\" class=\"search-box\" placeholder=\"Search...\" [ngModel]=\"searchTerm()\" (ngModelChange)=\"searchTerm.set($event)\">");
+            sb.AppendLine($"<div class=\"container-fluid px-2 py-2 bg-light min-vh-100\">");
+            sb.AppendLine("  <div class=\"card shadow-sm mb-2 border-0 bg-white\">");
+            sb.AppendLine("    <div class=\"card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3\">");
+            sb.AppendLine($"      <h3 class=\"m-0 fw-bold text-dark\">{_definition.EntityName} Catalog</h3>");
+            sb.AppendLine("      <div class=\"d-flex gap-2\">");
+            sb.AppendLine("        <input type=\"text\" class=\"form-control\" style=\"width: 300px;\" placeholder=\"Search...\" ");
+            sb.AppendLine("               [ngModel]=\"searchTerm()\" (ngModelChange)=\"searchTerm.set($event)\">");
             
             if (_definition.IsPost)
             {
-                sb.AppendLine(_renderer.RenderButton("Add New", "openCreate()", "add"));
+                sb.AppendLine("        <button class=\"btn btn-primary d-flex align-items-center justify-content-center px-4 shadow-sm fw-bold\" (click)=\"openCreate()\">");
+                sb.AppendLine($"          <span class=\"me-2 fs-5\">&#10010;</span> Add {_definition.EntityName}");
+                sb.AppendLine("        </button>");
             }
             
+            sb.AppendLine("      </div>");
             sb.AppendLine("    </div>");
             sb.AppendLine("  </div>");
             sb.AppendLine();
@@ -97,25 +98,22 @@ namespace AngularGenerator.Services.Builders
         {
             var primaryKey = _definition.Fields.FirstOrDefault(f => f.IsPrimaryKey)?.FieldName ?? "id";
 
-            sb.AppendLine($"      <table class=\"{_renderer.GetTableClass()}\">");
-            sb.AppendLine("        <thead>");
+            sb.AppendLine("  <div class=\"card shadow-sm border-0\">");
+            sb.AppendLine("    <div class=\"table-responsive\" style=\"max-height: 80vh;\">");
+            sb.AppendLine($"      <table class=\"table table-hover table-striped align-middle m-0\">");
+            sb.AppendLine("        <thead class=\"table-info bg-light sticky-top\" style=\"z-index: 1020;\">");
             sb.AppendLine("          <tr>");
             
-            // PK Column with sort
-            sb.AppendLine($"            <th (click)=\"onSort('{primaryKey}')\" class=\"sortable\" style=\"width: 70px;\">");
-            sb.AppendLine($"              ID");
-            sb.AppendLine($"              @if(sortColumn() === '{primaryKey}') {{");
-            sb.AppendLine("                <span class=\"sort-arrow\">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>");
-            sb.AppendLine("              }");
-            sb.AppendLine("            </th>");
+            // PK Column with sort - Sticky Left
+            sb.AppendLine($"            <th class=\"ps-4 position-sticky start-0\" style=\"width: 80px; z-index: 1021;\">ID</th>");
             
             // Other columns (exclude checkbox fields from columns)
             sb.AppendLine("            @for (field of formFields; track field.key) {");
             sb.AppendLine("              @if (field.type !== 'checkbox') {");
-            sb.AppendLine("                <th (click)=\"onSort(field.key)\" class=\"sortable\">");
+            sb.AppendLine("                <th class=\"text-nowrap\" style=\"cursor: pointer;\" (click)=\"onSort(field.key)\">");
             sb.AppendLine("                  {{ field.label }}");
             sb.AppendLine("                  @if(sortColumn() === field.key) {");
-            sb.AppendLine("                    <span class=\"sort-arrow\">{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>");
+            sb.AppendLine("                    <span>{{ sortDirection() === 'asc' ? '▲' : '▼' }}</span>");
             sb.AppendLine("                  }");
             sb.AppendLine("                </th>");
             sb.AppendLine("              }");
@@ -128,10 +126,11 @@ namespace AngularGenerator.Services.Builders
                 sb.AppendLine("            <th class=\"text-center\">Status</th>");
             }
             
-            // Actions column
+            // Actions column - Sticky Right
             if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
             {
-                sb.AppendLine("            <th class=\"text-center\">Actions</th>");
+                sb.AppendLine("            <th class=\"text-center table-striped position-sticky end-0 border-start\" ");
+                sb.AppendLine("                style=\"width: 200px; z-index: 1021;\">Actions</th>");
             }
             sb.AppendLine("          </tr>");
             sb.AppendLine("        </thead>");
@@ -139,13 +138,15 @@ namespace AngularGenerator.Services.Builders
             
             // Data rows using filteredList
             sb.AppendLine($"          @for (item of filteredList(); track item.{primaryKey}) {{");
-            sb.AppendLine("            <tr>");
-            sb.AppendLine($"              <td>{{{{ item.{primaryKey} }}}}</td>");
+            sb.AppendLine("            <tr class=\"bg-white\">");
+            sb.AppendLine($"              <td class=\"ps-4 fw-bold position-sticky start-0 bg-white border-end\">{{{{ item.{primaryKey} }}}}</td>");
             
             // Field values (exclude checkbox)
             sb.AppendLine("              @for (field of formFields; track field.key) {");
             sb.AppendLine("                @if (field.type !== 'checkbox') {");
-            sb.AppendLine("                  <td>{{ $any(item)[field.key] }}</td>");
+            sb.AppendLine("                  <td class=\"text-nowrap small text-muted\">");
+            sb.AppendLine("                    {{ $any(item)[field.key] || '-' }}");
+            sb.AppendLine("                  </td>");
             sb.AppendLine("                }");
             sb.AppendLine("              }");
             
@@ -156,50 +157,113 @@ namespace AngularGenerator.Services.Builders
                 if (checkboxField != null)
                 {
                     sb.AppendLine("              <td class=\"text-center\">");
-                    sb.AppendLine($"                @if ($any(item)['{checkboxField.FieldName}']) {{");
-                    sb.AppendLine($"                  <span class=\"{_renderer.GetBadgeClass(false)}\">Inactive</span>");
-                    sb.AppendLine("                } @else {");
-                    sb.AppendLine($"                  <span class=\"{_renderer.GetBadgeClass(true)}\">Active</span>");
-                    sb.AppendLine("                }");
+                    sb.AppendLine($"                <span class=\"badge rounded-pill {{{{ item.{checkboxField.FieldName} ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success' }}}} px-3\">");
+                    sb.AppendLine($"                  {{{{ item.{checkboxField.FieldName} ? 'Inactive' : 'Active' }}}}");
+                    sb.AppendLine("                </span>");
                     sb.AppendLine("              </td>");
                 }
             }
             
-            // Actions
+            // Actions - Sticky Right
             if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
             {
-                sb.AppendLine("              <td class=\"text-center action-col\">");
+                sb.AppendLine("              <td class=\"text-center position-sticky end-0 bg-white border-start shadow-sm\">");
+                sb.AppendLine("                <div class=\"d-flex justify-content-center gap-1\">");
             }
             
             if (_definition.IsGet && _definition.IsGetById)
             {
-                sb.AppendLine($"                <button class=\"{_renderer.GetButtonClass("info")}\" (click)=\"openDetail(item)\">View</button>");
+                sb.AppendLine("                  <button class=\"btn btn-sm btn-info text-white d-flex align-items-center justify-content-center shadow-sm\" ");
+                sb.AppendLine("                          (click)=\"openDetail(item)\" title=\"View Detail\">");
+                sb.AppendLine("                    <span class=\"fs-6\">&#128065;</span>");
+                sb.AppendLine("                    <span class=\"d-none d-md-inline ms-1\">View</span>");
+                sb.AppendLine("                  </button>");
             }
             
             if (_definition.IsUpdate)
             {
-                sb.AppendLine($"                <button class=\"{_renderer.GetButtonClass("warning")}\" (click)=\"openEdit(item)\">Edit</button>");
+                sb.AppendLine("                  <button class=\"btn btn-sm btn-warning d-flex align-items-center justify-content-center shadow-sm\" ");
+                sb.AppendLine("                          (click)=\"openEdit(item)\" title=\"Edit\">");
+                sb.AppendLine("                    <span class=\"fs-6\">&#9998;</span>");
+                sb.AppendLine("                    <span class=\"d-none d-md-inline ms-1\">Edit</span>");
+                sb.AppendLine("                  </button>");
             }
             
             if (_definition.IsDelete)
             {
-                sb.AppendLine($"                <button class=\"{_renderer.GetButtonClass("danger")}\" (click)=\"onDelete(item)\">Delete</button>");
+                sb.AppendLine("                  <button class=\"btn btn-sm btn-danger d-flex align-items-center justify-content-center shadow-sm\" ");
+                sb.AppendLine("                          (click)=\"onDelete(item)\" title=\"Delete\">");
+                sb.AppendLine("                    <span class=\"fs-6\">&#128465;</span>");
+                sb.AppendLine("                    <span class=\"d-none d-md-inline ms-1\">Del</span>");
+                sb.AppendLine("                  </button>");
             }
             if (_definition.IsGetById || _definition.IsUpdate || _definition.IsDelete)
             {
-            sb.AppendLine("              </td>");
+                sb.AppendLine("                </div>");
+                sb.AppendLine("              </td>");
             }
             
             sb.AppendLine("            </tr>");
             sb.AppendLine("          }");
             
-            // No results message
-            sb.AppendLine();
-            sb.AppendLine("          @if(filteredList().length === 0 && dataList().length > 0) {");
-            sb.AppendLine($"            <tr><td [attr.colspan]=\"formFields.length + 3\" class=\"text-center\">No results found</td></tr>");
-            sb.AppendLine("          }");
             sb.AppendLine("        </tbody>");
             sb.AppendLine("      </table>");
+            sb.AppendLine("    </div>");
+            
+            // Add Pagination Footer
+            BuildPaginationFooter(sb);
+            
+            sb.AppendLine("  </div>");
+        }
+
+        private void BuildPaginationFooter(StringBuilder sb)
+        {
+            sb.AppendLine("    <div class=\"card-footer bg-white border-top py-3\">");
+            sb.AppendLine("      <div class=\"d-flex justify-content-between align-items-center flex-wrap gap-3\">");
+            sb.AppendLine("    ");
+            sb.AppendLine("    <div class=\"d-flex align-items-center gap-3\">");
+            sb.AppendLine("      <div class=\"d-flex align-items-center\">");
+            sb.AppendLine("        <span class=\"small text-muted me-2 text-nowrap\">Show</span>");
+            sb.AppendLine("        <select class=\"form-select form-select-sm shadow-none\" ");
+            sb.AppendLine("                style=\"width: 70px;\"");
+            sb.AppendLine("                [ngModel]=\"pageSize()\" ");
+            sb.AppendLine("                (ngModelChange)=\"setPageSize($any($event))\">");
+            sb.AppendLine("          <option [value]=\"10\">10</option>");
+            sb.AppendLine("          <option [value]=\"20\">20</option>");
+            sb.AppendLine("          <option [value]=\"50\">50</option>");
+            sb.AppendLine("          <option [value]=\"100\">100</option>");
+            sb.AppendLine("        </select>");
+            sb.AppendLine("        <span class=\"small text-muted ms-2 text-nowrap\">entries</span>");
+            sb.AppendLine("      </div>");
+            sb.AppendLine("      ");
+            sb.AppendLine("      <div class=\"small text-muted border-start ps-3 d-none d-md-block\">");
+            sb.AppendLine("        Showing page <span class=\"fw-bold text-primary\">{{ currentPage() }}</span> of {{ totalPages() }}");
+            sb.AppendLine("      </div>");
+            sb.AppendLine("    </div>");
+            sb.AppendLine("    ");
+            sb.AppendLine($"      <nav aria-label=\"{_definition.EntityName} Page Navigation\">");
+            sb.AppendLine("        <ul class=\"pagination pagination-sm m-0 shadow-sm\">");
+            sb.AppendLine("          <li class=\"page-item\" [class.disabled]=\"currentPage() === 1\">");
+            sb.AppendLine("            <a class=\"page-link\" role=\"button\" (click)=\"setPage(currentPage() - 1)\">Previous</a>");
+            sb.AppendLine("          </li>");
+            sb.AppendLine();
+            sb.AppendLine("          @for (p of [].constructor(totalPages()); track $index) {");
+            sb.AppendLine("            @if (($index + 1) >= (currentPage() - 1) && ($index + 1) <= (currentPage() + 1)) {");
+            sb.AppendLine("              <li class=\"page-item\" [class.active]=\"currentPage() === ($index + 1)\">");
+            sb.AppendLine("                <a class=\"page-link\" role=\"button\" (click)=\"setPage($index + 1)\">");
+            sb.AppendLine("                  {{ $index + 1 }}");
+            sb.AppendLine("                </a>");
+            sb.AppendLine("              </li>");
+            sb.AppendLine("            }");
+            sb.AppendLine("          }");
+            sb.AppendLine();
+            sb.AppendLine("          <li class=\"page-item\" [class.disabled]=\"currentPage() === totalPages() || totalPages() === 0\">");
+            sb.AppendLine("            <a class=\"page-link\" role=\"button\" (click)=\"setPage(currentPage() + 1)\">Next</a>");
+            sb.AppendLine("          </li>");
+            sb.AppendLine("        </ul>");
+            sb.AppendLine("      </nav>");
+            sb.AppendLine("    </div>");
+            sb.AppendLine("</div>");
         }
 
         private void BuildMaterialTable(StringBuilder sb)
@@ -303,67 +367,84 @@ namespace AngularGenerator.Services.Builders
             if (!_definition.IsPost && !_definition.IsUpdate && !_definition.IsGetById) return;
 
             sb.AppendLine();
-            sb.AppendLine("  @if (showModal()) {");
-            sb.AppendLine("    <div class=\"modal-backdrop\">");
-            sb.AppendLine("      <div class=\"modal-content\">");
-            
-            // Modal Title
-            sb.AppendLine("        <h3>");
-            sb.AppendLine("          @if(isViewMode()) { View Detail }");
-            sb.AppendLine($"          @else if(isEditMode()) {{ Edit {_definition.EntityName} }}");
+            sb.AppendLine("@if (showModal()) {");
+            sb.AppendLine("<div class=\"modal fade show\" tabindex=\"-1\" style=\"display: block; background: rgba(0,0,0,0.5); z-index: 1060;\">");
+            sb.AppendLine("  <div class=\"modal-dialog modal-lg modal-dialog-centered\">");
+            sb.AppendLine("    <div class=\"modal-content shadow-lg border-0\">");
+            sb.AppendLine("      ");
+            sb.AppendLine("      <div class=\"modal-header bg-light py-3\">");
+            sb.AppendLine("        <h5 class=\"modal-title fw-bold\">");
+            sb.AppendLine("          <i class=\"bi bi-box-seam me-2\"></i>");
+            sb.AppendLine($"          @if(isViewMode()) {{ View {_definition.EntityName} Detail }}");
+            sb.AppendLine($"          @else if(isEditMode()) {{ Edit {_definition.EntityName} Information }}");
             sb.AppendLine($"          @else {{ Create New {_definition.EntityName} }}");
-            sb.AppendLine("        </h3>");
+            sb.AppendLine("        </h5>");
+            sb.AppendLine("        <button type=\"button\" class=\"btn-close\" (click)=\"onClose()\"></button>");
+            sb.AppendLine("      </div>");
             sb.AppendLine();
             
             // Form
-            sb.AppendLine($"        <form [formGroup]=\"{_definition.EntityName.ToLower()}Form\" (ngSubmit)=\"onSubmit()\">");
-            sb.AppendLine("          <div class=\"form-grid\">");
-            
-            // Loop through formFields
-            sb.AppendLine("            @for (field of formFields; track field.key) {");
-            sb.AppendLine("              <div class=\"form-group\" [class.full-width]=\"field.type === 'checkbox'\">");
-            sb.AppendLine("                <label>{{ field.label }}");
-            sb.AppendLine("                  @if(field.required && !isViewMode()) { <span class=\"required\">*</span> }");
+            sb.AppendLine($"      <form [formGroup]=\"{_definition.EntityName.ToLower()}Form\" (ngSubmit)=\"onSubmit()\">");
+            sb.AppendLine("        <div class=\"modal-body p-4\">");
+            sb.AppendLine("          <div class=\"row g-3\"> @for (field of formFields; track field.key) {");
+            sb.AppendLine("              <div [class]=\"field.type === 'checkbox' ? 'col-12' : 'col-md-6'\">");
+            sb.AppendLine("                <label class=\"form-label fw-semibold mb-1\">");
+            sb.AppendLine("                  {{ field.label }}");
+            sb.AppendLine("                  @if(field.required && !isViewMode()) { <span class=\"text-danger\">*</span> }");
             sb.AppendLine("                </label>");
             sb.AppendLine();
             
             // Checkbox field
             sb.AppendLine("                @if (field.type === 'checkbox') {");
-            sb.AppendLine("                  <div class=\"checkbox-wrapper\">");
-            sb.AppendLine("                    <input type=\"checkbox\" [formControlName]=\"field.key\">");
-            sb.AppendLine("                    <span>Yes / No</span>");
+            sb.AppendLine("                  <div class=\"form-check form-switch border rounded p-2 ps-5\">");
+            sb.AppendLine("                    <input type=\"checkbox\" class=\"form-check-input\" [formControlName]=\"field.key\" [id]=\"field.key\">");
+            sb.AppendLine("                    <label class=\"form-check-label text-muted\" [for]=\"field.key\">Enable this option</label>");
             sb.AppendLine("                  </div>");
             
-            // Other input types - with framework-specific styling
+            // Other input types
             sb.AppendLine("                } @else {");
-            sb.AppendLine("                  " + _renderer.RenderFormInput("field.key", "field.type", null).Replace("\n", "\n                  "));
-            
+            sb.AppendLine("                  <input [type]=\"field.type\"");
+            sb.AppendLine("                         [formControlName]=\"field.key\"");
+            sb.AppendLine("                         class=\"form-control\"");
+            sb.AppendLine("                         [class.bg-light]=\"isViewMode()\"");
+            sb.AppendLine("                         [readonly]=\"isViewMode()\"");
+            sb.AppendLine("                         [placeholder]=\"'Enter ' + field.label\"");
+            sb.AppendLine("                         [attr.maxlength]=\"field.maxLength\">");
+            sb.AppendLine("                }");
+            sb.AppendLine("                ");
+            sb.AppendLine($"                @if ({_definition.EntityName.ToLower()}Form.get(field.key)?.touched && {_definition.EntityName.ToLower()}Form.get(field.key)?.invalid) {{");
+            sb.AppendLine("                  <small class=\"text-danger\">This field is required.</small>");
             sb.AppendLine("                }");
             sb.AppendLine("              </div>");
             sb.AppendLine("            }");
             sb.AppendLine("          </div>");
+            sb.AppendLine("        </div>");
             sb.AppendLine();
             
             // Modal Actions
-            sb.AppendLine("          <div class=\"modal-actions\">");
-            sb.AppendLine("            <button type=\"button\" class=\"btn btn-secondary\" (click)=\"onClose()\">");
-            sb.AppendLine("              {{ isViewMode() ? 'Close' : 'Cancel' }}");
+            sb.AppendLine("        <div class=\"modal-footer bg-light border-0 px-4\">");
+            sb.AppendLine("          <button type=\"button\" class=\"btn btn-outline-secondary px-4\" (click)=\"onClose()\">");
+            sb.AppendLine("            {{ isViewMode() ? 'Close' : 'Cancel' }}");
+            sb.AppendLine("          </button>");
+            sb.AppendLine();
+            sb.AppendLine("          @if(isViewMode()) {");
+            sb.AppendLine("            <button type=\"button\" class=\"btn btn-primary px-4\" (click)=\"enableEditMode()\">");
+            sb.AppendLine("              <i class=\"bi bi-pencil-square me-1\"></i> Edit");
             sb.AppendLine("            </button>");
+            sb.AppendLine("          }");
             sb.AppendLine();
-            sb.AppendLine("            @if(isViewMode()) {");
-            sb.AppendLine("              <button type=\"button\" class=\"btn btn-sm btn-edit\" (click)=\"enableEditMode()\">Edit</button>");
-            sb.AppendLine("            }");
-            sb.AppendLine();
-            sb.AppendLine("            @if(!isViewMode()) {");
-            sb.AppendLine($"              <button type=\"submit\" class=\"btn btn-success\" [disabled]=\"{_definition.EntityName.ToLower()}Form.invalid\">");
-            sb.AppendLine("                {{ isEditMode() ? 'Update' : 'Create' }}");
-            sb.AppendLine("              </button>");
-            sb.AppendLine("            }");
-            sb.AppendLine("          </div>");
-            sb.AppendLine("        </form>");
-            sb.AppendLine("      </div>");
+            sb.AppendLine("          @if(!isViewMode()) {");
+            sb.AppendLine($"            <button type=\"submit\" class=\"btn btn-success px-4\" [disabled]=\"{_definition.EntityName.ToLower()}Form.invalid\">");
+            sb.AppendLine("              <i class=\"bi bi-check-lg me-1\"></i>");
+            sb.AppendLine($"              {{{{ isEditMode() ? 'Update Changes' : 'Create {_definition.EntityName}' }}}}");
+            sb.AppendLine("            </button>");
+            sb.AppendLine("          }");
+            sb.AppendLine("        </div>");
+            sb.AppendLine("      </form>");
             sb.AppendLine("    </div>");
-            sb.AppendLine("  }");
+            sb.AppendLine("  </div>");
+            sb.AppendLine("</div>");
+            sb.AppendLine("}");
         }
     }
 }
