@@ -1,0 +1,199 @@
+/* Angular CRUD Generator - Custom Styles */
+
+body {
+    background-color: #f4f6f9;
+    font-family: 'Sarabun', sans-serif;
+}
+
+/* Header Style */
+.main-header {
+    background-color: #007bff;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* DB Status Badge */
+.db-status {
+    font-size: 0.9rem;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(5px);
+}
+
+.status-dot {
+    height: 10px;
+    width: 10px;
+    background-color: #ccc;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+
+.status-online {
+    background-color: #4ade80;
+    box-shadow: 0 0 8px #4ade80;
+}
+
+.status-offline {
+    background-color: #f87171;
+}
+
+/* Custom Cards */
+.card-settings .card-header {
+    background-color: #66a3ff;
+    color: white;
+    font-weight: bold;
+}
+
+.card-result .card-header {
+    background-color: #2e7d32;
+    color: white;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Buttons */
+.btn-generate {
+    background-color: #2e7d32;
+    color: white;
+    font-weight: bold;
+    border: none;
+}
+
+.btn-generate:hover {
+    background-color: #1b5e20;
+    color: white;
+}
+
+/* Copy Button */
+.copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    z-index: 10;
+    opacity: 0.7;
+    transition: 0.3s;
+}
+
+.copy-btn:hover {
+    opacity: 1;
+}
+
+.tab-pane {
+    position: relative;
+}
+
+/* Table Dropdown Enhanced */
+#tableDropdown {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+#tableDropdown option {
+    padding: 8px;
+}
+
+#tableDropdown option:hover {
+    background-color: #e3f2fd;
+}
+
+/* Search Input Highlight */
+#tableSearchInput:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+/* Clear button animation */
+.btn-outline-secondary:active {
+    transform: scale(0.95);
+}
+
+/* Progress Bar Styles */
+.progress-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background-color: #f0f0f0;
+    z-index: 9999;
+    display: none;
+}
+
+.progress-bar-animated {
+    height: 100%;
+    background: linear-gradient(90deg, #007bff, #0056b3, #007bff);
+    background-size: 200% 100%;
+    animation: progressAnimation 2s linear infinite;
+    transition: width 0.3s ease;
+}
+
+@keyframes progressAnimation {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.generating-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+}
+
+.generating-content {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    min-width: 300px;
+}
+
+.generating-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Prism Code Block Styling */
+pre[class*="language-"] {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    background: #f5f5f5 !important;
+    border: none !important;
+    padding: 1rem !important;
+    max-height: 1020px !important;
+    overflow-y: auto !important;
+}
+
+code[class*="language-"] {
+    background: transparent !important;
+    text-shadow: none !important;
+    font-family: 'Courier New', monospace !important;
+    font-size: 0.9rem !important;
+    line-height: 1.6 !important;
+}
+
+.tab-content {
+    background: #f5f5f5;
+}

@@ -1,14 +1,17 @@
 using System.Text;
 using AngularGenerator.Core.Models;
+using AngularGenerator.Services.Builders.Strategies;
 
 namespace AngularGenerator.Services.Builders
 {
     /// <summary>
     /// Builder for TypeScript component code using fluent API
+    /// Uses Strategy Pattern for framework-specific imports
     /// </summary>
     public class TypeScriptBuilder : ICodeBuilder<TypeScriptBuilder>
     {
         private readonly ComponentDefinition _definition;
+        private readonly ICssFrameworkRenderer _renderer;
         private readonly List<ImportSegment> _imports = new();
         private readonly List<PropertySegment> _properties = new();
         private readonly List<MethodSegment> _methods = new();
@@ -17,43 +20,58 @@ namespace AngularGenerator.Services.Builders
         public TypeScriptBuilder(ComponentDefinition definition)
         {
             _definition = definition;
+            _renderer = CssRendererFactory.Create(definition.CssFramework);
             InitializeDefaults();
         }
         
         private void InitializeDefaults()
         {
             // Default Angular imports (v20+)
-            AddImport(new[] { "Component", "inject", "signal" }, "@angular/core");
+            AddImport(new[] { "Component", "inject", "signal", "computed", "OnInit" }, "@angular/core");
+            AddImport(new[] { "CommonModule" }, "@angular/common");
+            AddImport(new[] { "FormsModule" }, "@angular/forms");
+            
+            // Import interface if separated
+            if (_definition.SeparateInterface)
+            {
+                AddImport(new[] { $"{_definition.EntityName}Model" }, $"./{_definition.EntityName.ToLower()}.interface");
+            }
             
             // Default component decorator
             _componentDecorator.Add($"selector: '{_definition.Selector}'");
             _componentDecorator.Add("standalone: true");
-            _componentDecorator.Add("imports: []");
             _componentDecorator.Add($"templateUrl: './{_definition.EntityName.ToLower()}.html'");
             _componentDecorator.Add($"styleUrls: ['./{_definition.EntityName.ToLower()}.css']");            
+            
             // Add Material imports if using Angular Material
-            if (_definition.CssFramework == CSSFramework.AngularMaterial)
+            var frameworkImports = _renderer.GetRequiredImports();
+            if (frameworkImports.Length > 0)
             {
-                AddImport(new[] { "MatTableModule", "MatButtonModule", "MatIconModule", "MatFormFieldModule", "MatInputModule" }, "@angular/material");
-                
-                var importsLine = _componentDecorator.FirstOrDefault(x => x.StartsWith("imports:"));
-                if (importsLine != null)
+                foreach (var import in frameworkImports)
                 {
-                    _componentDecorator.Remove(importsLine);
-                    _componentDecorator.Add("imports: [MatTableModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule]");
+                    var module = import;
+                    var from = $"@angular/material/{module.Replace("Module", "").Replace("Mat", "").ToLower()}";
+                    if (module == "MatTableModule") from = "@angular/material/table";
+                    else if (module == "MatButtonModule") from = "@angular/material/button";
+                    else if (module == "MatIconModule") from = "@angular/material/icon";
+                    else if (module == "MatFormFieldModule") from = "@angular/material/form-field";
+                    else if (module == "MatInputModule") from = "@angular/material/input";
+                    else if (module == "MatChipsModule") from = "@angular/material/chips";
+                    else if (module == "MatTooltipModule") from = "@angular/material/tooltip";
+                    else if (module == "MatSortModule") from = "@angular/material/sort";
+                    else if (module == "MatCardModule") from = "@angular/material/card";
+                    else if (module == "MatOptionModule") from = "@angular/material/core";
+                    else if (module == "MatProgressSpinnerModule") from = "@angular/material/progress-spinner";
+                    AddImport(new[] { module }, from);
                 }
-            }            
-            // Add Material imports if using Angular Material
-            if (_definition.CssFramework == CSSFramework.AngularMaterial)
+                
+                AddImport(new[] { "ReactiveFormsModule" }, "@angular/forms");
+                
+                _componentDecorator.Add(_renderer.GetImportsDeclaration());
+            }
+            else
             {
-                AddImport(new[] { "MatTableModule", "MatButtonModule", "MatIconModule", "MatFormFieldModule", "MatInputModule" }, "@angular/material");
-                
-                var importsLine = _componentDecorator.FirstOrDefault(x => x.StartsWith("imports:"));
-                if (importsLine != null)
-                {
-                    _componentDecorator.Remove(importsLine);
-                    _componentDecorator.Add("imports: [MatTableModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule]");
-                }
+                _componentDecorator.Add("imports: [CommonModule, FormsModule]");
             }
         }
         
@@ -85,14 +103,16 @@ namespace AngularGenerator.Services.Builders
             {
                 _componentDecorator.Remove(importsLine);
                 
-                if (_definition.CssFramework == CSSFramework.AngularMaterial)
+                // ตรวจสอบว่ามี ReactiveFormsModule อยู่แล้วหรือยัง
+                var baseImports = _renderer.GetImportsDeclaration();
+                if (!baseImports.Contains("ReactiveFormsModule"))
                 {
-                    _componentDecorator.Add("imports: [ReactiveFormsModule, MatTableModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule]");
+                    // Replace "FormsModule" ด้วย "ReactiveFormsModule, FormsModule" เฉพาะตอนท้าย
+                    baseImports = baseImports.Replace(", FormsModule]", ", ReactiveFormsModule, FormsModule]")
+                                             .Replace("[FormsModule]", "[ReactiveFormsModule, FormsModule]")
+                                             .Replace("[CommonModule, FormsModule", "[CommonModule, ReactiveFormsModule, FormsModule");
                 }
-                else
-                {
-                    _componentDecorator.Add("imports: [ReactiveFormsModule]");
-                }
+                _componentDecorator.Add(baseImports);
             }
             
             // Add FormBuilder injection
@@ -104,21 +124,21 @@ namespace AngularGenerator.Services.Builders
                 AccessModifier = "private"
             });
             
-            AddProperty(new PropertySegment 
-            { 
-                Name = "form", 
-                Type = "FormGroup",
-                AccessModifier = "public"
-            });
-            
             return this;
         }
         
         public TypeScriptBuilder WithService()
-        {
-            AddImport(new[] { $"{_definition.EntityName}Service", $"{_definition.EntityName}Model" }, 
-                      $"./{_definition.EntityName.ToLower()}.service");
-            
+        {   
+            if (!_definition.SeparateInterface)
+            {
+                AddImport(new[] { $"{_definition.EntityName}Service", $"{_definition.EntityName}Model" }, 
+                    $"./{_definition.EntityName.ToLower()}.service");
+            }
+            else
+            {
+                AddImport(new[] { $"{_definition.EntityName}Service" }, 
+                    $"./{_definition.EntityName.ToLower()}.service");
+            }
             AddProperty(new PropertySegment 
             { 
                 Name = "service", 
@@ -132,81 +152,244 @@ namespace AngularGenerator.Services.Builders
         
         public TypeScriptBuilder WithGetAll()
         {
+            // Data signals
             AddProperty(new PropertySegment 
             { 
                 Name = "dataList", 
                 Type = $"{_definition.EntityName}Model[]",
                 InitialValue = $"signal<{_definition.EntityName}Model[]>([])",
-                IsSignal = false // already in InitialValue
+                IsSignal = false,
+                AccessModifier = "public"
             });
+            
+            // Add displayedColumns for Material Table
+            if (_renderer.RequiresSpecialTableRendering())
+            {
+                var pkField = _definition.Fields.FirstOrDefault(f => f.IsPrimaryKey)?.FieldName ?? "id";
+                var hasCheckbox = _definition.Fields.Any(f => f.UIControl == ControlType.Checkbox);
+                var columns = new List<string> { $"'{pkField}'" };
+                
+                // Add other fields (exclude PK and checkbox)
+                columns.AddRange(_definition.Fields
+                    .Where(f => !f.IsPrimaryKey && f.UIControl != ControlType.Checkbox)
+                    .Select(f => $"'{f.FieldName}'"));
+                
+                if (hasCheckbox)
+                {
+                    columns.Add("'status'");
+                }
+                
+                if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
+                {
+                    columns.Add("'actions'");
+                }
+                
+                var columnsArray = string.Join(", ", columns);
+                
+                AddProperty(new PropertySegment
+                {
+                    Name = "displayedColumns",
+                    Type = "string[]",
+                    InitialValue = $"[{columnsArray}]",
+                    AccessModifier = "public"
+                });
+                
+                // Add cardFields for Material Card view
+                var cardFieldsList = _definition.Fields
+                    .Where(f => !f.IsPrimaryKey && f.UIControl != ControlType.Checkbox)
+                    .Select(f => $"{{ key: '{f.FieldName}', label: '{f.Label}', type: '{GetFieldType(f)}' }}")
+                    .ToList();
+                
+                if (cardFieldsList.Any())
+                {
+                    var cardFieldsValue = $"[{string.Join(", ", cardFieldsList)}]";
+                    
+                    AddProperty(new PropertySegment
+                    {
+                        Name = "cardFields",
+                        Type = "Array<{key: string, label: string, type: string}>",
+                        InitialValue = cardFieldsValue,
+                        AccessModifier = "public"
+                    });
+                }
+            }
             
             AddProperty(new PropertySegment 
             { 
                 Name = "isLoading", 
                 Type = "boolean",
                 InitialValue = "signal<boolean>(false)",
-                IsSignal = false
+                IsSignal = false,
+                AccessModifier = "public"
             });
             
-            // Detail Modal properties
+            // Search & Sort signals
             AddProperty(new PropertySegment
             {
-                Name = "showDetailModal",
-                Type = "boolean",
-                InitialValue = "signal<boolean>(false)",
-                IsSignal = false
+                Name = "searchTerm",
+                Type = "string",
+                InitialValue = "signal<string>('')",
+                IsSignal = false,
+                AccessModifier = "public"
             });
             
             AddProperty(new PropertySegment
             {
-                Name = "selectedItem",
-                Type = $"{_definition.EntityName}Model | null",
-                InitialValue = $"signal<{_definition.EntityName}Model | null>(null)",
-                IsSignal = false
+                Name = "sortColumn",
+                Type = "string",
+                InitialValue = "signal<string>('')",
+                IsSignal = false,
+                AccessModifier = "public"
             });
             
+            AddProperty(new PropertySegment
+            {
+                Name = "sortDirection",
+                Type = "'asc' | 'desc'",
+                InitialValue = "signal<'asc' | 'desc'>('asc')",
+                IsSignal = false,
+                AccessModifier = "public"
+            });
+            
+            // Computed filtered list with pagination
+            var filterLogic = new List<string>
+            {
+                "let data = [...this.dataList()];",
+                "const term = this.searchTerm().toLowerCase();",
+                "const col = this.sortColumn();",
+                "const dir = this.sortDirection();",
+                "",
+                "// 1. Filter (ปรับให้ค้นหาครอบคลุมขึ้น)",
+                "if (term) {",
+                "  data = data.filter(item => ",
+                "    Object.values(item).some(val => ",
+                "      String(val).toLowerCase().includes(term)",
+                "    )",
+                "  );",
+                "}",
+                "",
+                "// 2. Sort",
+                "if (col) {",
+                "  data.sort((a, b) => {",
+                "    const valA = (a as any)[col];",
+                "    const valB = (b as any)[col];",
+                "    if (valA == null) return 1;",
+                "    if (valB == null) return -1;",
+                "    if (valA < valB) return dir === 'asc' ? -1 : 1;",
+                "    if (valA > valB) return dir === 'asc' ? 1 : -1;",
+                "    return 0;",
+                "  });",
+                "}",
+                "",
+                "// 3. Pagination Logic",
+                "const startIndex = (this.currentPage() - 1) * this.pageSize();",
+                "return data.slice(startIndex, startIndex + this.pageSize());"
+            };
+            
+            AddProperty(new PropertySegment
+            {
+                Name = "filteredList",
+                Type = "",
+                InitialValue = "computed(() => {\n    " + string.Join("\n    ", filterLogic) + "\n  })",
+                AccessModifier = "public"
+            });
+            
+            // Pagination properties
+            AddProperty(new PropertySegment
+            {
+                Name = "currentPage",
+                Type = "number",
+                InitialValue = "signal<number>(1)",
+                IsSignal = false,
+                AccessModifier = "public"
+            });
+            
+            AddProperty(new PropertySegment
+            {
+                Name = "pageSize",
+                Type = "number",
+                InitialValue = "signal<number>(20)",
+                IsSignal = false,
+                AccessModifier = "public"
+            });
+            
+            // Add setPageSize method
+            AddMethod(new MethodSegment
+            {
+                Name = "setPageSize",
+                Parameters = new List<string> { "size: number" },
+                ReturnType = "void",
+                BodyLines = new List<string>
+                {
+                    "this.pageSize.set(size);",
+                    "this.currentPage.set(1);"
+                },
+                AccessModifier = "public"
+            });
+            
+            // Add totalPages computed
+            AddProperty(new PropertySegment
+            {
+                Name = "totalPages",
+                Type = "",
+                InitialValue = @"computed(() => {
+  const count = this.searchTerm() 
+    ? this.dataList().filter(item => Object.values(item).some(v => String(v).toLowerCase().includes(this.searchTerm().toLowerCase()))).length
+    : this.dataList().length;
+  return Math.ceil(count / this.pageSize());
+  })",
+                AccessModifier = "public"
+            });
+            
+            // Add setPage method
+            AddMethod(new MethodSegment
+            {
+                Name = "setPage",
+                Parameters = new List<string> { "page: number" },
+                ReturnType = "void",
+                BodyLines = new List<string>
+                {
+                    "if (page >= 1 && page <= this.totalPages()) {",
+                    "  this.currentPage.set(page);",
+                    "}"
+                },
+                AccessModifier = "public"
+            });
+            
+            // Load data method
             var loadMethod = new MethodSegment
             {
                 Name = "loadData",
+                ReturnType = "void",
                 BodyLines = new List<string>
                 {
                     "this.isLoading.set(true);",
                     "this.service.getAll().subscribe({",
-                    "  next: (data) => {",
-                    "    this.dataList.set(data);",
-                    "    this.isLoading.set(false);",
-                    "  },",
-                    "  error: (err) => {",
-                    "    console.error(err);",
-                    "    this.isLoading.set(false);",
-                    "  }",
+                    "  next: (res) => { this.dataList.set(res); this.isLoading.set(false); },",
+                    "  error: (err) => { console.error(err); this.isLoading.set(false); }",
                     "});"
-                }
+                },
+                AccessModifier = "public"
             };
             
             AddMethod(loadMethod);
             
-            // View Detail method
+            // Sort method
             AddMethod(new MethodSegment
             {
-                Name = "viewDetail",
-                Parameters = new List<string> { $"item: {_definition.EntityName}Model" },
+                Name = "onSort",
+                Parameters = new List<string> { "columnKey: string" },
+                ReturnType = "void",
                 BodyLines = new List<string>
                 {
-                    "this.selectedItem.set(item);",
-                    "this.showDetailModal.set(true);"
-                }
-            });
-            
-            // Close Detail method
-            AddMethod(new MethodSegment
-            {
-                Name = "closeDetail",
-                BodyLines = new List<string>
-                {
-                    "this.showDetailModal.set(false);",
-                    "this.selectedItem.set(null);"
-                }
+                    "if (this.sortColumn() === columnKey) {",
+                    "  this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');",
+                    "} else {",
+                    "  this.sortColumn.set(columnKey);",
+                    "  this.sortDirection.set('asc');",
+                    "}"
+                },
+                AccessModifier = "public"
             });
             
             return this;
@@ -219,25 +402,46 @@ namespace AngularGenerator.Services.Builders
                 Name = "showModal", 
                 Type = "boolean",
                 InitialValue = "signal<boolean>(false)",
-                IsSignal = false
+                IsSignal = false,
+                AccessModifier = "public"
             });
             
             AddProperty(new PropertySegment 
             { 
-                Name = "isSaving", 
+                Name = "isEditMode", 
                 Type = "boolean",
                 InitialValue = "signal<boolean>(false)",
-                IsSignal = false
+                IsSignal = false,
+                AccessModifier = "public"
+            });
+            
+            AddProperty(new PropertySegment 
+            { 
+                Name = "isViewMode", 
+                Type = "boolean",
+                InitialValue = "signal<boolean>(false)",
+                IsSignal = false,
+                AccessModifier = "public"
             });
             
             var openCreateMethod = new MethodSegment
             {
                 Name = "openCreate",
+                ReturnType = "void",
                 BodyLines = new List<string>
                 {
-                    "this.form.reset();",
+                    "this.isViewMode.set(false);",
+                    "this.isEditMode.set(false);",
+                    $"this.{_definition.EntityName.ToLower()}Form.enable();",
+                    "",
+                    "// Reset Form",
+                    $"const resetValues: any = {{ {_definition.PrimaryKeyName}: 0 }};",
+                    "this.formFields.forEach(f => resetValues[f.key] = f.type === 'checkbox' ? false : '');",
+                    $"this.{_definition.EntityName.ToLower()}Form.reset(resetValues);",
+                    "",
                     "this.showModal.set(true);"
-                }
+                },
+                AccessModifier = "public"
             };
             
             AddMethod(openCreateMethod);
@@ -253,31 +457,104 @@ namespace AngularGenerator.Services.Builders
                     Name = "showModal", 
                     Type = "boolean",
                     InitialValue = "signal<boolean>(false)",
-                    IsSignal = false
+                    IsSignal = false,
+                    AccessModifier = "public"
                 });
             }
             
-            AddProperty(new PropertySegment 
-            { 
-                Name = "isEditMode", 
-                Type = "boolean",
-                InitialValue = "signal<boolean>(false)",
-                IsSignal = false
-            });
-            
-            var editMethod = new MethodSegment
+            if (!_properties.Any(p => p.Name == "isEditMode"))
             {
-                Name = "onEdit",
+                AddProperty(new PropertySegment 
+                { 
+                    Name = "isEditMode", 
+                    Type = "boolean",
+                    InitialValue = "signal<boolean>(false)",
+                    IsSignal = false,
+                    AccessModifier = "public"
+                });
+            }
+            
+            if (!_properties.Any(p => p.Name == "isViewMode"))
+            {
+                AddProperty(new PropertySegment 
+                { 
+                    Name = "isViewMode", 
+                    Type = "boolean",
+                    InitialValue = "signal<boolean>(false)",
+                    IsSignal = false,
+                    AccessModifier = "public"
+                });
+            }
+            
+            // openEdit method - รับ item มาเลย
+            AddMethod(new MethodSegment
+            {
+                Name = "openEdit",
                 Parameters = new List<string> { $"item: {_definition.EntityName}Model" },
+                ReturnType = "void",
+                AccessModifier = "public",
                 BodyLines = new List<string>
                 {
-                    "this.isEditMode.set(true);",
-                    "this.form.patchValue(item);",
-                    "this.showModal.set(true);"
+                    "this.isLoading.set(true);",
+                    $"this.service.getById(item.{_definition.PrimaryKeyName}).subscribe({{", 
+                    "  next: (data) => {",
+                    "    this.isViewMode.set(false);",
+                    "    this.isEditMode.set(true);",
+                    $"    this.{_definition.EntityName.ToLower()}Form.enable();",
+                    $"    this.{_definition.EntityName.ToLower()}Form.patchValue(data);",
+                    "    this.showModal.set(true);",
+                    "    this.isLoading.set(false);",
+                    "  },",
+                    "  error: (err) => {",
+                    "    alert(err.message);",
+                    "    this.isLoading.set(false);",
+                    "  }",
+                    "});"
                 }
-            };
+            });
             
-            AddMethod(editMethod);
+            // openDetail method - รับ item มาเลย สำหรับ Card View
+            AddMethod(new MethodSegment
+            {
+                 Name = "openDetail",
+                Parameters = new List<string> { $"item: {_definition.EntityName}Model" },
+                ReturnType = "void",
+                AccessModifier = "public",
+                BodyLines = new List<string>
+                {
+                    "this.isLoading.set(true);",
+                    $"this.service.getById(item.{_definition.PrimaryKeyName}).subscribe({{", 
+                    "  next: (data) => {",
+                    "    this.isViewMode.set(true);",
+                    "    this.isEditMode.set(false);",
+                    $"    this.{_definition.EntityName.ToLower()}Form.disable();",
+                    $"    this.{_definition.EntityName.ToLower()}Form.patchValue(data);",
+                    "    this.showModal.set(true);",
+                    "    this.isLoading.set(false);",
+                    "  },",
+                    "  error: (err) => {",
+                    "    alert(err.message);",
+                    "    this.isLoading.set(false);",
+                    "  }",
+                    "});"
+                }
+            });
+            
+            // enableEditMode method - สลับจาก View เป็น Edit Mode
+            AddMethod(new MethodSegment
+            {
+                Name = "enableEditMode",
+                Parameters = new List<string>(),
+                ReturnType = "void",
+                BodyLines = new List<string>
+                {
+                    "this.isViewMode.set(false);",
+                    "this.isEditMode.set(true);",
+                    $"this.{_definition.EntityName.ToLower()}Form.enable();"
+                },
+                AccessModifier = "public"
+            });
+            
             return this;
         }
         
@@ -285,52 +562,50 @@ namespace AngularGenerator.Services.Builders
         {
             var submitLines = new List<string>
             {
-                "if (this.form.invalid) return;",
-                "this.isSaving.set(true);",
+                $"if (this.{_definition.EntityName.ToLower()}Form.invalid) return;",
+                $"const formData = this.{_definition.EntityName.ToLower()}Form.getRawValue();",
+                "this.isLoading.set(true);",
                 ""
             };
             
             if (_definition.IsUpdate && _definition.IsPost)
             {
-                submitLines.Add($"const request$ = this.isEditMode()");
-                submitLines.Add($"  ? this.service.update(this.form.value.{_definition.PrimaryKeyName}, this.form.value)");
-                submitLines.Add($"  : this.service.create(this.form.value);");
+                submitLines.Add("const action$ = this.isEditMode()");
+                submitLines.Add($"  ? this.service.update(formData.{_definition.PrimaryKeyName}, formData)");
+                submitLines.Add("  : this.service.create(formData);");
             }
             else if (_definition.IsPost)
             {
-                submitLines.Add("const request$ = this.service.create(this.form.value);");
+                submitLines.Add("const action$ = this.service.create(formData);");
             }
             else if (_definition.IsUpdate)
             {
-                submitLines.Add($"const request$ = this.service.update(this.form.value.{_definition.PrimaryKeyName}, this.form.value);");
+                submitLines.Add($"const action$ = this.service.update(formData.{_definition.PrimaryKeyName}, formData);");
             }
             
             submitLines.Add("");
-            submitLines.Add("request$.subscribe({");
-            submitLines.Add("  next: () => {");
-            
-            if (_definition.IsGet)
-                submitLines.Add("    this.loadData();");
-            
-            submitLines.Add("    this.isSaving.set(false);");
-            submitLines.Add("    this.closeModal();");
-            submitLines.Add("  },");
-            submitLines.Add("  error: (err) => {");
-            submitLines.Add("    console.error(err);");
-            submitLines.Add("    this.isSaving.set(false);");
+            submitLines.Add("action$.subscribe({");
+            submitLines.Add("  next: () => { this.loadData(); this.onClose(); },");
+            submitLines.Add("  error: (err) => { ");
+            submitLines.Add("    alert('Failed: ' + (err.error?.message || err.message)); ");
+            submitLines.Add("    this.isLoading.set(false); ");
             submitLines.Add("  }");
             submitLines.Add("});");
             
             AddMethod(new MethodSegment
             {
                 Name = "onSubmit",
-                BodyLines = submitLines
+                ReturnType = "void",
+                BodyLines = submitLines,
+                AccessModifier = "public"
             });
             
             AddMethod(new MethodSegment
             {
-                Name = "closeModal",
-                BodyLines = new List<string> { "this.showModal.set(false);" }
+                Name = "onClose",
+                ReturnType = "void",
+                BodyLines = new List<string> { "this.showModal.set(false);" },
+                AccessModifier = "public"
             });
             
             return this;
@@ -341,18 +616,19 @@ namespace AngularGenerator.Services.Builders
             var deleteMethod = new MethodSegment
             {
                 Name = "onDelete",
-                Parameters = new List<string> { "id: any" },
+                Parameters = new List<string> { $"item: {_definition.EntityName}Model" },
+                ReturnType = "void",
                 BodyLines = new List<string>
                 {
-                    "if (!confirm('Confirm delete?')) return;",
-                    "this.service.delete(id).subscribe(() => {"
-                }
+                    $"if (confirm(`ต้องการลบ ID : ${{item.{_definition.PrimaryKeyName}}} ใช่หรือไม่`)) {{",
+                    $"  this.service.delete(item.{_definition.PrimaryKeyName}).subscribe({{",
+                    "    next: () => this.loadData(),",
+                    "    error: (err) => alert('Cannot delete: ' + err.message)",
+                    "  });",
+                    "}"
+                },
+                AccessModifier = "public"
             };
-            
-            if (_definition.IsGet)
-                deleteMethod.BodyLines.Add("  this.loadData();");
-            
-            deleteMethod.BodyLines.Add("});");
             
             AddMethod(deleteMethod);
             return this;
@@ -360,28 +636,58 @@ namespace AngularGenerator.Services.Builders
         
         public TypeScriptBuilder WithFormInit()
         {
-            var formControls = new List<string>();
-            
-            if (!string.IsNullOrEmpty(_definition.PrimaryKeyName))
-            {
-                formControls.Add($"      {_definition.PrimaryKeyName}: [null]");
-            }
-            
+            // สร้าง formFields array (เสมอ)
+            var formFieldsItems = new List<string>();
             foreach (var field in _definition.Fields.Where(f => !f.IsPrimaryKey))
             {
-                var validators = field.IsRequired ? ", [Validators.required]" : "";
-                formControls.Add($"      {field.FieldName}: [null{validators}]");
+                var maxLength = field.TsType == "string" ? "50" : "null";
+                var fieldType = field.UIControl == ControlType.Checkbox ? "checkbox" : 
+                               field.UIControl == ControlType.Number ? "number" : 
+                               field.UIControl == ControlType.DatePicker ? "date" : "text";
+                
+                formFieldsItems.Add($"{{ key: '{field.FieldName}', label: '{field.Label}', type: '{fieldType}', required: {field.IsRequired.ToString().ToLower()}, maxLength: {maxLength} }}");
             }
+            
+            var formFieldsArrayValue = "[\n    " + string.Join(",\n    ", formFieldsItems) + "\n  ]";
+            
+            AddProperty(new PropertySegment
+            {
+                Name = "formFields",
+                Type = "",
+                InitialValue = formFieldsArrayValue,
+                AccessModifier = "public readonly"
+            });
+            
+            return this;
+        }
+        
+        public TypeScriptBuilder WithFormGroup()
+        {
+            // สร้าง FormGroup property
+            AddProperty(new PropertySegment
+            {
+                Name = $"{_definition.EntityName.ToLower()}Form",
+                Type = "FormGroup",
+                InitialValue = "null!",
+                AccessModifier = "public"
+            });
+            
+            var formControls = new List<string>();
+            formControls.Add($"const group: any = {{ {_definition.PrimaryKeyName}: [0] }};");
+            formControls.Add("this.formFields.forEach(field => {");
+            formControls.Add("  const validators = [];");
+            formControls.Add("  if (field.required) validators.push(Validators.required);");
+            formControls.Add("  if (field.maxLength) validators.push(Validators.maxLength(field.maxLength));");
+            formControls.Add("  group[field.key] = [field.type === 'checkbox' ? false : '', validators];");
+            formControls.Add("});");
+            formControls.Add($"this.{_definition.EntityName.ToLower()}Form = this.fb.group(group);");
             
             var initFormMethod = new MethodSegment
             {
                 Name = "initForm",
-                BodyLines = new List<string>
-                {
-                    "this.form = this.fb.group({",
-                    string.Join(",\n", formControls),
-                    "    });"
-                }
+                ReturnType = "void",
+                BodyLines = formControls,
+                AccessModifier = "private"
             };
             
             AddMethod(initFormMethod);
@@ -416,18 +722,15 @@ namespace AngularGenerator.Services.Builders
                 ReturnType = "any",
                 BodyLines = new List<string>
                 {
-                    "// ลองหา field ตามชื่อที่ระบุก่อน (camelCase)",
                     "if (fieldName in item) {",
                     "  return (item as any)[fieldName];",
                     "}",
                     "",
-                    "// ถ้าไม่เจอ ลอง PascalCase (ตัวแรกเป็นตัวใหญ่)",
                     "const pascalCase = fieldName.charAt(0).toUpperCase() + fieldName.slice(1);",
                     "if (pascalCase in item) {",
                     "  return (item as any)[pascalCase];",
                     "}",
                     "",
-                    "// ไม่เจอเลย ลอง lowercase ทั้งหมด",
                     "const lowerCase = fieldName.toLowerCase();",
                     "const found = Object.keys(item).find(key => key.toLowerCase() === lowerCase);",
                     "return found ? (item as any)[found] : undefined;"
@@ -456,18 +759,34 @@ namespace AngularGenerator.Services.Builders
         
         public TypeScriptBuilder WithNgOnInit()
         {
-            var initLines = new List<string>();
+            var constructorLines = new List<string>();
             
             if (_definition.IsPost || _definition.IsUpdate)
-                initLines.Add("this.initForm();");
+                constructorLines.Add("this.initForm();");
             
             if (_definition.IsGet)
-                initLines.Add("this.loadData();");
+                constructorLines.Add("this.loadData();");
             
+            // Only add constructor if there are lines to execute
+            if (constructorLines.Any())
+            {
+                var constructorMethod = new MethodSegment
+                {
+                    Name = "constructor",
+                    BodyLines = constructorLines,
+                    AccessModifier = "public"
+                };
+                
+                AddMethod(constructorMethod);
+            }
+            
+            // Add empty ngOnInit
             AddMethod(new MethodSegment
             {
-                Name = "constructor",
-                BodyLines = initLines
+                Name = "ngOnInit",
+                ReturnType = "void",
+                BodyLines = new List<string>(),
+                AccessModifier = "public"
             });
             
             return this;
@@ -495,7 +814,7 @@ namespace AngularGenerator.Services.Builders
             }
             sb.AppendLine("})");
             
-            sb.AppendLine($"export class {_definition.EntityName}Component {{");
+            sb.AppendLine($"export class {_definition.EntityName}Component implements OnInit {{");
             sb.AppendLine();
             
             // Properties
@@ -516,6 +835,19 @@ namespace AngularGenerator.Services.Builders
             sb.AppendLine("}");
             
             return sb.ToString();
+        }
+        
+        private string GetFieldType(AngularField field)
+        {
+            return field.UIControl switch
+            {
+                ControlType.Text => "text",
+                ControlType.Number => "number",
+                ControlType.DatePicker => "date",
+                ControlType.Checkbox => "checkbox",
+                ControlType.TextArea => "textarea",
+                _ => "text"
+            };
         }
         
         public TypeScriptBuilder Reset()

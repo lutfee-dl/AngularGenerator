@@ -41,11 +41,15 @@
         public bool IsDelete { get; set; }
 
         public UILayoutType LayoutType { get; set; } = UILayoutType.TableView;
-        public CSSFramework CssFramework { get; set; } = CSSFramework.BasicCSS; 
+        public CSSFramework CssFramework { get; set; } = CSSFramework.BasicCSS;
+        
+        // Interface Options
+        public bool SeparateInterface { get; set; } = false;
 
         public string GeneratedHtml { get; set; } = string.Empty;
         public string GeneratedTs { get; set; } = string.Empty;
         public string GeneratedService { get; set; } = string.Empty;
         public string GeneratedCss { get; set; } = string.Empty;
+        public string GeneratedInterface { get; set; } = string.Empty;
     }
 }

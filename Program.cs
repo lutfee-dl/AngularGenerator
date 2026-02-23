@@ -8,9 +8,19 @@ builder.Services.AddControllersWithViews();
 // -------------------------------------------------------------
 // Register services - Now using Builder Pattern
 // -------------------------------------------------------------
-builder.Services.AddScoped<DbSchemaService>();
+// Register DbSchemaServiceFactory as Singleton
+builder.Services.AddSingleton<DbSchemaServiceFactory>();
+
+// Register Database Configuration Service
+builder.Services.AddScoped<DatabaseConfigService>();
+
+// Register other services
 builder.Services.AddScoped<AngularComponentFactory>();
 builder.Services.AddScoped<FullStackGenerator>();
+
+// Register HttpClient and JsonSchemaService for API/JSON schema detection
+builder.Services.AddHttpClient<JsonSchemaService>();
+builder.Services.AddScoped<JsonSchemaService>();
 
 // Build App
 var app = builder.Build();
