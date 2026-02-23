@@ -23,11 +23,11 @@ namespace AngularGenerator.Services.Builders.Strategies
         
         public string GetTableClass() => "mat-table";
         
-        public string GetBadgeClass(bool isActive) => "";  // Material uses mat-chip
+        public string GetBadgeClass(bool isActive) => "";
         
-        public string GetInputClass() => "";  // Material uses mat-form-field
+        public string GetInputClass() => "";
         
-        public string RenderButton(string text, string onClick, string icon = null)
+        public string RenderButton(string text, string onClick, string? icon = null)
         {
             if (string.IsNullOrEmpty(icon))
             {
@@ -61,13 +61,19 @@ namespace AngularGenerator.Services.Builders.Strategies
             "MatFormFieldModule",
             "MatInputModule",
             "MatChipsModule",
+            "MatCheckboxModule",
             "MatTooltipModule",
             "MatSortModule",
-            "MatCardModule"
+            "MatCardModule",
+            "MatPaginatorModule",
+            "MatProgressSpinnerModule",
+            "MatToolbarModule",
+            "MatSelectModule",
+            "MatOptionModule"
         };
         
         public string GetImportsDeclaration() 
-            => "imports: [CommonModule, ReactiveFormsModule, FormsModule, MatTableModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatChipsModule, MatTooltipModule, MatSortModule, MatCardModule]";
+            => "imports: [CommonModule, ReactiveFormsModule, FormsModule, MatTableModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatChipsModule, MatCheckboxModule, MatTooltipModule, MatSortModule, MatCardModule, MatPaginatorModule, MatProgressSpinnerModule, MatToolbarModule, MatSelectModule, MatOptionModule]";
         
         public bool RequiresSpecialTableRendering() => true;
     }

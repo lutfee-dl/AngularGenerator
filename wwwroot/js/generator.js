@@ -1,4 +1,6 @@
 // Angular CRUD Generator - JavaScript Functions
+var currentDbType = 'SqlServer';
+
 document.addEventListener('DOMContentLoaded', function () {
     checkDbStatus();
     toggleCrudOptions();
@@ -126,30 +128,49 @@ function checkDbStatus() {
         .then(r => r.json())
         .then(d => {
             if (d.success) {
+                currentDbType = d.dbType;
+                toggleAs400UI(d.dbType === 'AS400');
+                
                 dot.className = 'status-dot status-online';
-                const dbIcon = d.dbType === 'MySQL' ? '🐬' : d.dbType === 'PostgreSQL' ? '🐘' : '💾';
+                const dbIcon = d.dbType === 'MySQL' ? '🐬' : d.dbType === 'PostgreSQL' ? '🐘' : d.dbType === 'AS400' ? '📠' : '💾';
                 text.innerText = `${dbIcon} ${d.dbType}: ${d.databaseName}`;
                 // โหลดรายการ table เมื่อ DB เชื่อมต่อสำเร็จ
                 loadTableList();
             } else {
                 dot.className = 'status-dot status-offline';
                 text.innerText = 'DB Disconnected';
+                console.error('DB Check Failed:', d.message);
+                if (d.message && d.message !== "Connection failed - Unable to open connection") {
+                     showToast('DB Error: ' + d.message, 'error');
+                }
             }
         })
         .catch(e => {
             dot.className = 'status-dot status-offline';
             text.innerText = 'Error';
+            console.error('CheckDbConnection Exception:', e);
         });
 }
 
 // --- Load Table List ---
 async function loadTableList() {
+    const dropdown = document.getElementById('tableDropdown');
+    const status = document.getElementById('loadStatus');
+    
     try {
+        // Show loading state
+        dropdown.innerHTML = '<option value="">⏳ Loading tables...</option>';
+        if (status) {
+            status.textContent = 'Loading tables...';
+            status.className = 'text-info small';
+        }
+        
+        console.log('Loading table list...');
+        
         const response = await fetch('/Generator/GetTables');
         const data = await response.json();
 
         if (data.success) {
-            const dropdown = document.getElementById('tableDropdown');
             dropdown.innerHTML = '<option value="">-- Select Table --</option>';
 
             // เก็บรายการตารางทั้งหมดไว้ใน attribute สำหรับ filter
@@ -162,13 +183,33 @@ async function loadTableList() {
                 dropdown.appendChild(option);
             });
 
-            console.log(`Loaded ${data.tables.length} tables from ${data.databaseName}`);
+            console.log(`✅ Loaded ${data.tables.length} tables from ${data.databaseName} (${data.dbType})`);
 
             // แสดงจำนวนตาราง
             updateTableCount(data.tables.length, data.tables.length);
+            
+            // Show success message briefly
+            if (data.tables.length > 0) {
+                showToast(`Loaded ${data.tables.length} tables`, 'success');
+            } else {
+                showToast('No tables found', 'warning');
+            }
+        } else {
+            dropdown.innerHTML = '<option value="">-- No tables found --</option>';
+            console.error('Failed to load tables:', data.message);
+            if (status) {
+                status.textContent = 'Failed to load tables';
+                status.className = 'text-danger small';
+            }
         }
     } catch (error) {
         console.error('Failed to load table list:', error);
+        dropdown.innerHTML = '<option value="">-- Error loading tables --</option>';
+        if (status) {
+            status.textContent = 'Error loading tables';
+            status.className = 'text-danger small';
+        }
+        showToast('Failed to load table list', 'error');
     }
 }
 
@@ -206,6 +247,46 @@ function filterTables() {
 function clearTableSearch() {
     document.getElementById('tableSearchInput').value = '';
     filterTables();
+}
+
+// --- Clear Table and Field Lists ---
+function clearTableAndFieldLists() {
+    // Clear table dropdown
+    const dropdown = document.getElementById('tableDropdown');
+    dropdown.innerHTML = '<option value="">-- Select Table --</option>';
+    dropdown.removeAttribute('data-all-tables');
+    
+    // Clear table input
+    document.getElementById('tableNameInput').value = '';
+    
+    // Clear search
+    document.getElementById('tableSearchInput').value = '';
+    
+    // Clear field containers
+    const sqlFieldContainer = document.getElementById('sqlFieldContainer');
+    const apiFieldContainer = document.getElementById('apiFieldContainer');
+    const jsonFieldContainer = document.getElementById('jsonFieldContainer');
+    
+    if (sqlFieldContainer) {
+        sqlFieldContainer.innerHTML = '<div class="h-100 d-flex align-items-center justify-content-center" style="min-height: 120px;"><small class="text-muted fst-italic">Press \'Load\' to see columns...</small></div>';
+    }
+    
+    if (apiFieldContainer) {
+        apiFieldContainer.innerHTML = '<div class="h-100 d-flex align-items-center justify-content-center" style="min-height: 120px;"><small class="text-muted fst-italic">Please fetch schema to load fields from API</small></div>';
+    }
+    
+    if (jsonFieldContainer) {
+        jsonFieldContainer.innerHTML = '<div class="h-100 d-flex align-items-center justify-content-center" style="min-height: 120px;"><small class="text-muted fst-italic">Please parse JSON to load fields</small></div>';
+    }
+    
+    // Clear status
+    const status = document.getElementById('loadStatus');
+    if (status) {
+        status.textContent = '';
+        status.className = '';
+    }
+    
+    console.log('Cleared table and field lists');
 }
 
 // --- Update Table Count ---
@@ -813,39 +894,63 @@ function showToast(message, type = 'success') {
 function openDbConfigModal() {
     const modal = new bootstrap.Modal(document.getElementById('dbConfigModal'));
     updateDbFields(); // Set initial hints
+    loadSavedConfigurations(); // Load saved configurations
     modal.show();
 }
 
 function updateDbFields() {
     const dbType = document.querySelector('input[name="modalDbType"]:checked').value;
     const portField = document.getElementById('modalPortField');
+    const databaseField = document.getElementById('modalDatabaseField');
+    const databaseLabel = document.getElementById('modalDatabaseLabel');
     const usernameField = document.getElementById('modalUsernameField');
     const passwordField = document.getElementById('modalPasswordField');
     const windowsAuthField = document.getElementById('modalWindowsAuthField');
     const connStringHint = document.getElementById('connStringHint');
     const portInput = document.getElementById('modalPort');
+    const databaseInput = document.getElementById('modalDatabase');
 
     // Show/hide fields based on DB type
     if (dbType === 'SqlServer') {
         portField.style.display = 'none';
+        databaseField.style.display = 'block';
+        databaseLabel.textContent = 'Database';
         windowsAuthField.style.display = 'block';
         toggleAuthFields(); // Update username/password visibility
         portInput.value = '';
+        databaseInput.placeholder = 'mydatabase';
         connStringHint.textContent = 'ตัวอย่าง: Server=localhost\\SQLEXPRESS;Database=mydb;Trusted_Connection=True;TrustServerCertificate=True';
     } else if (dbType === 'MySQL') {
         portField.style.display = 'block';
+        databaseField.style.display = 'block';
+        databaseLabel.textContent = 'Database';
         usernameField.style.display = 'block';
         passwordField.style.display = 'block';
         windowsAuthField.style.display = 'none';
         portInput.value = '3306';
+        databaseInput.placeholder = 'mydatabase';
         connStringHint.textContent = 'ตัวอย่าง: Server=localhost;Port=3306;Database=mydb;Uid=root;Pwd=password;';
     } else if (dbType === 'PostgreSQL') {
         portField.style.display = 'block';
+        databaseField.style.display = 'block';
+        databaseLabel.textContent = 'Database';
         usernameField.style.display = 'block';
         passwordField.style.display = 'block';
         windowsAuthField.style.display = 'none';
         portInput.value = '5432';
+        databaseInput.placeholder = 'mydatabase';
         connStringHint.textContent = 'ตัวอย่าง: Host=localhost;Port=5432;Database=mydb;Username=postgres;Password=password;';
+    } else if (dbType === 'AS400') {
+        // AS400/IBM i ไม่มีแนวคิด Database แต่ใช้ Library
+        portField.style.display = 'none';
+        databaseField.style.display = 'block'; // แสดง field แต่เปลี่ยน label
+        databaseLabel.textContent = 'Default Library (Optional)';
+        databaseInput.placeholder = 'MYLIB';
+        usernameField.style.display = 'block';
+        passwordField.style.display = 'block';
+        windowsAuthField.style.display = 'none';
+        portInput.value = '';
+        connStringHint.textContent = 'ตัวอย่าง: Provider=IBMDA400.DataSource.1;Data Source=192.168.1.100;User Id=user;Password=pass;Default Collection=MYLIB';
     }
 }
 
@@ -879,6 +984,12 @@ function buildConnectionString() {
         connString = `Server=${server || 'localhost'};Port=${port || '3306'};Database=${database || 'mydb'};Uid=${username || 'root'};Pwd=${password};`;
     } else if (dbType === 'PostgreSQL') {
         connString = `Host=${server || 'localhost'};Port=${port || '5432'};Database=${database || 'mydb'};Username=${username || 'postgres'};Password=${password};`;
+    } else if (dbType === 'AS400') {
+        // AS400/IBM i - Database field คือ Default Library (Optional)
+        connString = `Provider=IBMDA400.DataSource.1;Data Source=${server || 'localhost'};User Id=${username || 'user'};Password=${password};`;
+        if (database) {
+            connString += `Default Collection=${database};`;
+        }
     }
 
     document.getElementById('modalConnString').value = connString;
@@ -959,7 +1070,12 @@ async function saveDbConfig() {
 
         if (data.success) {
             showToast(`Switched to ${dbType}: ${data.databaseName}`, 'success');
-            checkDbStatus(); // Refresh status and reload table list
+            
+            // Clear table list and field list
+            clearTableAndFieldLists();
+            
+            // Refresh status and reload table list
+            checkDbStatus();
 
             // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('dbConfigModal'));
@@ -969,5 +1085,224 @@ async function saveDbConfig() {
         }
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// ==========================================
+// Database Configuration Management
+// ==========================================
+
+async function loadSavedConfigurations() {
+    try {
+        const response = await fetch('/Generator/GetSavedConfigurations');
+        const data = await response.json();
+
+        if (data.success && data.configurations.length > 0) {
+            displaySavedConfigurations(data.configurations);
+        }
+    } catch (error) {
+        console.error('Failed to load saved configurations:', error);
+    }
+}
+
+function displaySavedConfigurations(configs) {
+    const container = document.getElementById('savedConfigsList');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    configs.forEach(config => {
+        const configItem = document.createElement('div');
+        configItem.className = 'saved-config-item border rounded p-2 mb-2 bg-light';
+        configItem.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="fw-bold text-primary">
+                        ${config.name}
+                        ${config.isDefault ? '<span class="badge bg-success ms-2">Default</span>' : ''}
+                    </div>
+                    <small class="text-muted">${config.dbType}</small>
+                    ${config.description ? `<div><small class="text-muted fst-italic">${config.description}</small></div>` : ''}
+                    <div><small class="text-muted">Last used: ${new Date(config.lastUsed).toLocaleString()}</small></div>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="loadConfiguration('${config.name}')" title="Load">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="deleteConfiguration('${config.name}')" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        container.appendChild(configItem);
+    });
+}
+
+async function saveCurrentConfiguration() {
+    const configName = document.getElementById('saveConfigName')?.value.trim();
+    const configDescription = document.getElementById('saveConfigDescription')?.value.trim() || '';
+    const setAsDefault = document.getElementById('saveConfigDefault')?.checked || false;
+    
+    const dbType = document.querySelector('input[name="modalDbType"]:checked').value;
+    const connString = document.getElementById('modalConnString').value.trim();
+
+    if (!configName) {
+        showToast('กรุณาใส่ชื่อ Configuration', 'warning');
+        return;
+    }
+
+    if (!connString) {
+        showToast('กรุณากรอก Connection String', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch('/Generator/SaveDatabaseConfig', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: configName,
+                dbType: dbType,
+                connectionString: connString,
+                isDefault: setAsDefault,
+                description: configDescription
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast(data.message, 'success');
+            
+            // Clear save form
+            document.getElementById('saveConfigName').value = '';
+            document.getElementById('saveConfigDescription').value = '';
+            document.getElementById('saveConfigDefault').checked = false;
+            
+            // Reload configurations list
+            loadSavedConfigurations();
+        } else {
+            showToast(data.message, 'error');
+        }
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function loadConfiguration(configName) {
+    try {
+        const response = await fetch('/Generator/LoadDatabaseConfig', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: configName })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Set the values in modal
+            document.querySelector(`input[name="modalDbType"][value="${data.config.dbType}"]`).checked = true;
+            document.getElementById('modalConnString').value = data.config.connectionString;
+            updateDbFields();
+
+            showToast(`Loaded configuration: ${configName}`, 'success');
+        } else {
+            showToast(data.message, 'error');
+        }
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function deleteConfiguration(configName) {
+    if (!confirm(`Are you sure you want to delete configuration "${configName}"?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/Generator/DeleteDatabaseConfig', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: configName })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast(data.message, 'success');
+            loadSavedConfigurations();
+        } else {
+            showToast(data.message, 'error');
+        }
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function exportConfigurations(includePasswords = false) {
+    try {
+        const response = await fetch(`/Generator/ExportConfigurations?includePasswords=${includePasswords}`);
+        const json = await response.text();
+
+        // Download as file
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'database-configs.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast('Configurations exported successfully', 'success');
+    } catch (error) {
+        showToast(`Export failed: ${error.message}`, 'error');
+    }
+}
+
+// --- AS400 UI Helpers ---
+function toggleAs400UI(isAs400) {
+    const standardSection = document.getElementById('standardTableSection');
+    const as400Section = document.getElementById('as400SpecialSection');
+    const tableInput = document.getElementById('tableNameInput');
+
+    if (isAs400) {
+        if (standardSection) standardSection.style.display = 'none';
+        if (as400Section) as400Section.style.display = 'block';
+        if (tableInput) tableInput.placeholder = "Combined Name (LIBRARY.TABLE)";
+    } else {
+        if (standardSection) standardSection.style.display = 'block';
+        if (as400Section) as400Section.style.display = 'none';
+        if (tableInput) tableInput.placeholder = "or type table name manually";
+    }
+}
+
+function syncAs400TableName() {
+    const lib = document.getElementById('libraryInput').value.trim();
+    const table = document.getElementById('tableNameAs400Input').value.trim();
+    const combined = document.getElementById('tableNameInput');
+    
+    if (lib && table) {
+        combined.value = `${lib}.${table}`.toUpperCase();
+    } else if (table) {
+        combined.value = table.toUpperCase();
+    }
+}
+
+function syncAs400FromManual() {
+    if (currentDbType !== 'AS400') return;
+    
+    const combined = document.getElementById('tableNameInput').value.trim();
+    const libInput = document.getElementById('libraryInput');
+    const tableInput = document.getElementById('tableNameAs400Input');
+    
+    if (combined && combined.includes('.')) {
+        const parts = combined.split('.');
+        if (libInput) libInput.value = parts[0].trim().toUpperCase();
+        if (tableInput) tableInput.value = parts[1].trim().toUpperCase();
+    } else if (tableInput) {
+        tableInput.value = combined.toUpperCase();
     }
 }

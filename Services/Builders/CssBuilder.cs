@@ -20,6 +20,11 @@ namespace AngularGenerator.Services.Builders
         /// <summary>
         /// Build CSS สำหรับ Table View
         /// </summary>
+        public string Build()
+        {
+            return _css.ToString();
+        }
+
         public CssBuilder WithTableStyles()
         {
             _css.AppendLine("@import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');");
@@ -36,6 +41,9 @@ namespace AngularGenerator.Services.Builders
             _css.AppendLine(".container {");
             _css.AppendLine("  padding: 20px;");
             _css.AppendLine("  font-family: \"Sarabun\", sans-serif;");
+            _css.AppendLine("  width: 100%;");
+            _css.AppendLine("  max-width: 100%;");
+            _css.AppendLine("  box-sizing: border-box;");
             _css.AppendLine("}");
             _css.AppendLine();
 
@@ -46,6 +54,7 @@ namespace AngularGenerator.Services.Builders
             _css.AppendLine("  margin-bottom: 20px;");
             _css.AppendLine("  border-bottom: 2px solid #f0f0f0;");
             _css.AppendLine("  padding-bottom: 15px;");
+            _css.AppendLine("  width: 100%;");
             _css.AppendLine("}");
             _css.AppendLine(".header-actions {");
             _css.AppendLine("  display: flex;");
@@ -67,11 +76,11 @@ namespace AngularGenerator.Services.Builders
 
             _css.AppendLine(".table-responsive {");
             _css.AppendLine("  overflow-x: auto;");
+            _css.AppendLine("  width: 100%;");
             _css.AppendLine("}");
             _css.AppendLine(".table {");
             _css.AppendLine("  width: 100%;");
             _css.AppendLine("  border-collapse: collapse;");
-            _css.AppendLine("  min-width: 800px;");
             _css.AppendLine("}");
             _css.AppendLine(".table th,");
             _css.AppendLine(".table td {");
@@ -349,6 +358,7 @@ namespace AngularGenerator.Services.Builders
             _css.AppendLine("  grid-template-columns: repeat(4, 1fr);");
             _css.AppendLine("  gap: 20px;");
             _css.AppendLine("  margin-top: 20px;");
+            _css.AppendLine("  width: 100%;");
             _css.AppendLine("}");
             _css.AppendLine();
 
@@ -483,9 +493,5 @@ namespace AngularGenerator.Services.Builders
             return this;
         }
 
-        public string Build()
-        {
-            return _css.ToString();
-        }
     }
 }

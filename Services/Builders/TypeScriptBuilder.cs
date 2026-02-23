@@ -60,8 +60,12 @@ namespace AngularGenerator.Services.Builders
                     else if (module == "MatTooltipModule") from = "@angular/material/tooltip";
                     else if (module == "MatSortModule") from = "@angular/material/sort";
                     else if (module == "MatCardModule") from = "@angular/material/card";
+                    else if (module == "MatOptionModule") from = "@angular/material/core";
+                    else if (module == "MatProgressSpinnerModule") from = "@angular/material/progress-spinner";
                     AddImport(new[] { module }, from);
                 }
+                
+                AddImport(new[] { "ReactiveFormsModule" }, "@angular/forms");
                 
                 _componentDecorator.Add(_renderer.GetImportsDeclaration());
             }

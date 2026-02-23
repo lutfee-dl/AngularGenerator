@@ -6,7 +6,8 @@ namespace AngularGenerator.Services
     {
         SqlServer,
         MySQL,
-        PostgreSQL
+        PostgreSQL,
+        AS400
     }
 
     public interface IDbSchemaService

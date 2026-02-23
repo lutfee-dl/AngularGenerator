@@ -11,6 +11,9 @@ builder.Services.AddControllersWithViews();
 // Register DbSchemaServiceFactory as Singleton
 builder.Services.AddSingleton<DbSchemaServiceFactory>();
 
+// Register Database Configuration Service
+builder.Services.AddScoped<DatabaseConfigService>();
+
 // Register other services
 builder.Services.AddScoped<AngularComponentFactory>();
 builder.Services.AddScoped<FullStackGenerator>();

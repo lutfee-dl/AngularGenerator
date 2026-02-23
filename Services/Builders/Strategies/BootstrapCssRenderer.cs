@@ -28,7 +28,7 @@ namespace AngularGenerator.Services.Builders.Strategies
         
         public string GetInputClass() => "form-control";
         
-        public string RenderButton(string text, string onClick, string icon = null)
+        public string RenderButton(string text, string onClick, string? icon = null)
         {
             return $"<button class=\"{GetButtonClass()}\" (click)=\"{onClick}\">+ {text}</button>";
         }

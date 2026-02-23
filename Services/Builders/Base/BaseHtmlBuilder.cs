@@ -28,7 +28,7 @@ namespace AngularGenerator.Services.Builders.Base
             BuildContainer();
             BuildHeader();
             BuildLoadingIndicator();
-            BuildDataSection(); // Abstract - each builder implements its own
+            BuildDataSection();
             BuildModal();
             CloseContainer();
             

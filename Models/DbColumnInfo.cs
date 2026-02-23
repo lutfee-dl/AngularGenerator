@@ -18,5 +18,6 @@ namespace AngularGenerator.Core.Models
         public string? ColumnDefault { get; set; }
         public bool IsPrimaryKey { get; set; }
         public bool IsIdentity { get; set; }
+        public string? ColumnText { get; set; }
     }
 }

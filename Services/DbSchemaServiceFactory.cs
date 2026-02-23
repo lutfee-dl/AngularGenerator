@@ -29,6 +29,7 @@ namespace AngularGenerator.Services
                 DatabaseType.SqlServer => new SqlServerSchemaService(connectionString),
                 DatabaseType.MySQL => new MySqlSchemaService(connectionString),
                 DatabaseType.PostgreSQL => new PostgreSqlSchemaService(connectionString),
+                DatabaseType.AS400 => new As400SchemaService(connectionString),
                 _ => throw new NotSupportedException($"Database type {dbType} is not supported")
             };
 
@@ -47,6 +48,7 @@ namespace AngularGenerator.Services
                 DatabaseType.SqlServer => new SqlServerSchemaService(connectionString),
                 DatabaseType.MySQL => new MySqlSchemaService(connectionString),
                 DatabaseType.PostgreSQL => new PostgreSqlSchemaService(connectionString),
+                DatabaseType.AS400 => new As400SchemaService(connectionString),
                 _ => throw new NotSupportedException($"Database type {dbType} is not supported")
             };
 

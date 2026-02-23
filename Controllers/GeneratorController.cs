@@ -11,13 +11,20 @@ namespace AngularGenerator.Controllers
         private readonly DbSchemaServiceFactory _dbFactory;
         private readonly AngularComponentFactory _factory;
         private readonly JsonSchemaService _jsonSchemaService;
+        private readonly DatabaseConfigService _configService;
 
-        public GeneratorController(FullStackGenerator generator, DbSchemaServiceFactory dbFactory, AngularComponentFactory factory, JsonSchemaService jsonSchemaService)
+        public GeneratorController(
+            FullStackGenerator generator, 
+            DbSchemaServiceFactory dbFactory, 
+            AngularComponentFactory factory, 
+            JsonSchemaService jsonSchemaService,
+            DatabaseConfigService configService)
         {
             _generator = generator;
             _dbFactory = dbFactory;
             _factory = factory;
             _jsonSchemaService = jsonSchemaService;
+            _configService = configService;
         }
 
         [HttpGet]
@@ -43,15 +50,26 @@ namespace AngularGenerator.Controllers
                 if (string.IsNullOrEmpty(tableName)) 
                     return Json(new { success = false, message = "Table name is empty" });
                 
-                var columns = _dbFactory.GetCurrentService().GetSchema(tableName);
+                Console.WriteLine($"GetColumns: Table='{tableName}'");
+                
+                var service = _dbFactory.GetCurrentService();
+                Console.WriteLine($"GetColumns: DbType={service.DbType}");
+                
+                var columns = service.GetSchema(tableName);
+                Console.WriteLine($"GetColumns: Found {columns?.Count() ?? 0} columns");
+                
                 if (columns == null || !columns.Any()) 
-                    return Json(new { success = false, message = "Table not found." });
+                    return Json(new { success = false, message = "Table not found or has no columns." });
 
                 var componentDef = _factory.Create(tableName, columns);
+                Console.WriteLine($"GetColumns: Created {componentDef.Fields.Count} fields");
+                
                 return Json(new { success = true, fields = componentDef.Fields });
             }
             catch (Exception ex) 
-            { 
+            {
+                Console.WriteLine($"GetColumns Error: {ex.Message}");
+                Console.WriteLine($"GetColumns StackTrace: {ex.StackTrace}");
                 return Json(new { success = false, message = ex.Message }); 
             }
         }
@@ -468,6 +486,196 @@ namespace AngularGenerator.Controllers
                 ViewBag.Error = $"Error: {ex.Message}";
                 return View();
             }
+        }
+
+        // ==========================================
+        // Database Configuration Management APIs
+        // ==========================================
+
+        [HttpGet]
+        public IActionResult GetSavedConfigurations()
+        {
+            try
+            {
+                var configs = _configService.GetAllConfigurations();
+                
+                // Mask passwords for security
+                var maskedConfigs = configs.Select(c => new
+                {
+                    c.Name,
+                    c.DbType,
+                    ConnectionString = MaskConnectionString(c.ConnectionString),
+                    c.IsDefault,
+                    c.Description,
+                    c.LastUsed
+                });
+
+                return Json(new { success = true, configurations = maskedConfigs });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GetSavedConfigurations Error: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public IActionResult SaveDatabaseConfig([FromBody] SaveConfigRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.Name))
+                {
+                    return Json(new { success = false, message = "Configuration name is required" });
+                }
+
+                if (string.IsNullOrEmpty(request.ConnectionString))
+                {
+                    return Json(new { success = false, message = "Connection string is required" });
+                }
+
+                var config = new DatabaseConfig
+                {
+                    Name = request.Name,
+                    DbType = request.DbType,
+                    ConnectionString = request.ConnectionString,
+                    IsDefault = request.IsDefault,
+                    Description = request.Description
+                };
+
+                bool saved = _configService.SaveConfiguration(config);
+
+                if (saved)
+                {
+                    return Json(new { success = true, message = $"Configuration '{request.Name}' saved successfully" });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Failed to save configuration" });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SaveDatabaseConfig Error: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public IActionResult LoadDatabaseConfig([FromBody] Dictionary<string, string> data)
+        {
+            try
+            {
+                if (!data.ContainsKey("name"))
+                {
+                    return Json(new { success = false, message = "Configuration name is required" });
+                }
+
+                var configName = data["name"];
+                var config = _configService.GetConfiguration(configName);
+
+                if (config == null)
+                {
+                    return Json(new { success = false, message = "Configuration not found" });
+                }
+
+                // Update last used
+                _configService.UpdateLastUsed(configName);
+
+                return Json(new
+                {
+                    success = true,
+                    config = new
+                    {
+                        config.Name,
+                        config.DbType,
+                        config.ConnectionString,
+                        config.Description
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"LoadDatabaseConfig Error: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public IActionResult DeleteDatabaseConfig([FromBody] DeleteConfigRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.Name))
+                {
+                    return Json(new { success = false, message = "Configuration name is required" });
+                }
+
+                bool deleted = _configService.DeleteConfiguration(request.Name);
+
+                if (deleted)
+                {
+                    return Json(new { success = true, message = $"Configuration '{request.Name}' deleted" });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Configuration not found" });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"DeleteDatabaseConfig Error: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public IActionResult ExportConfigurations(bool includePasswords = false)
+        {
+            try
+            {
+                var json = _configService.ExportConfigurations(includePasswords);
+                return Content(json, "application/json");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ExportConfigurations Error: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // Helper method to mask passwords in connection strings
+        private string MaskConnectionString(string connectionString)
+        {
+            if (string.IsNullOrEmpty(connectionString))
+                return connectionString;
+
+            var patterns = new[] { 
+                ("Password=", ";"), 
+                ("Pwd=", ";"), 
+                ("password=", ";"), 
+                ("pwd=", ";"),
+                ("User Id=", ";"),
+                ("Uid=", ";")
+            };
+
+            var masked = connectionString;
+            foreach (var (start, end) in patterns)
+            {
+                var index = masked.IndexOf(start, StringComparison.OrdinalIgnoreCase);
+                if (index >= 0)
+                {
+                    var valueStart = index + start.Length;
+                    var endIndex = masked.IndexOf(end, valueStart);
+                    if (endIndex < 0) endIndex = masked.Length;
+
+                    var before = masked.Substring(0, valueStart);
+                    var after = masked.Substring(endIndex);
+                    masked = before + "****" + after;
+                }
+            }
+
+            return masked;
         }
 
     }
