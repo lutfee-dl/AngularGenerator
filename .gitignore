@@ -1,0 +1,18 @@
+# Visual Studio Essentials
+[Bb]in/
+[Oo]bj/
+.vs/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Project-specific
+appsettings.Development.json
+database-configs.json
