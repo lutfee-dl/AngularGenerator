@@ -164,9 +164,7 @@ async function loadTableList() {
             status.textContent = 'Loading tables...';
             status.className = 'text-info small';
         }
-        
-        console.log('Loading table list...');
-        
+                
         const response = await fetch('/Generator/GetTables');
         const data = await response.json();
 
@@ -182,8 +180,6 @@ async function loadTableList() {
                 option.textContent = table;
                 dropdown.appendChild(option);
             });
-
-            console.log(`✅ Loaded ${data.tables.length} tables from ${data.databaseName} (${data.dbType})`);
 
             // แสดงจำนวนตาราง
             updateTableCount(data.tables.length, data.tables.length);
@@ -285,8 +281,6 @@ function clearTableAndFieldLists() {
         status.textContent = '';
         status.className = '';
     }
-    
-    console.log('Cleared table and field lists');
 }
 
 // --- Update Table Count ---
@@ -1008,9 +1002,6 @@ async function testConnection() {
     testResult.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testing...';
     testResult.className = 'small text-info';
 
-    // Debug log
-    console.log('Testing connection:', { dbType, connString: connString.substring(0, 50) + '...' });
-
     try {
         const response = await fetch('/Generator/TestConnection', {
             method: 'POST',
@@ -1021,14 +1012,11 @@ async function testConnection() {
             })
         });
 
-        console.log('Response status:', response.status);
-
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         const data = await response.json();
-        console.log('Response data:', data);
 
         if (data.success) {
             testResult.innerHTML = `<i class="fas fa-check-circle"></i> Connected to: ${data.databaseName}`;
@@ -1089,29 +1077,48 @@ async function saveDbConfig() {
 }
 
 // ==========================================
-// Database Configuration Management
+// Database Configuration Management (LocalStorage)
 // ==========================================
+const STORAGE_KEY = 'angular_generator_db_configs';
 
-async function loadSavedConfigurations() {
+// Initialize on load
+function loadSavedConfigurations() {
     try {
-        const response = await fetch('/Generator/GetSavedConfigurations');
-        const data = await response.json();
-
-        if (data.success && data.configurations.length > 0) {
-            displaySavedConfigurations(data.configurations);
-        }
+        const configs = getLocalConfigs();
+        displaySavedConfigurations(configs);
     } catch (error) {
         console.error('Failed to load saved configurations:', error);
     }
+}
+
+function getLocalConfigs() {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+}
+
+function saveLocalConfigs(configs) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(configs));
 }
 
 function displaySavedConfigurations(configs) {
     const container = document.getElementById('savedConfigsList');
     if (!container) return;
 
+    if (!configs || configs.length === 0) {
+        container.innerHTML = '<small class="text-muted fst-italic">No saved configurations in your browser. Create one below.</small>';
+        return;
+    }
+
     container.innerHTML = '';
 
-    configs.forEach(config => {
+    // Sort: Default first, then by LastUsed
+    const sortedConfigs = [...configs].sort((a, b) => {
+        if (a.isDefault) return -1;
+        if (b.isDefault) return 1;
+        return new Date(b.lastUsed) - new Date(a.lastUsed);
+    });
+
+    sortedConfigs.forEach(config => {
         const configItem = document.createElement('div');
         configItem.className = 'saved-config-item border rounded p-2 mb-2 bg-light';
         configItem.innerHTML = `
@@ -1123,13 +1130,13 @@ function displaySavedConfigurations(configs) {
                     </div>
                     <small class="text-muted">${config.dbType}</small>
                     ${config.description ? `<div><small class="text-muted fst-italic">${config.description}</small></div>` : ''}
-                    <div><small class="text-muted">Last used: ${new Date(config.lastUsed).toLocaleString()}</small></div>
+                    <div><small class="text-muted" style="font-size: 0.7rem;">Connection: ${maskConnectionString(config.connectionString)}</small></div>
                 </div>
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" onclick="loadConfiguration('${config.name}')" title="Load">
-                        <i class="fas fa-download"></i>
+                <div class="btn-group btn-group-sm ms-2">
+                    <button class="btn btn-outline-primary" onclick="loadConfiguration('${config.name.replace(/'/g, "\\'")}')" title="Load to Form">
+                        <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-outline-danger" onclick="deleteConfiguration('${config.name}')" title="Delete">
+                    <button class="btn btn-outline-danger" onclick="deleteConfiguration('${config.name.replace(/'/g, "\\'")}')" title="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -1139,7 +1146,7 @@ function displaySavedConfigurations(configs) {
     });
 }
 
-async function saveCurrentConfiguration() {
+function saveCurrentConfiguration() {
     const configName = document.getElementById('saveConfigName')?.value.trim();
     const configDescription = document.getElementById('saveConfigDescription')?.value.trim() || '';
     const setAsDefault = document.getElementById('saveConfigDefault')?.checked || false;
@@ -1158,108 +1165,122 @@ async function saveCurrentConfiguration() {
     }
 
     try {
-        const response = await fetch('/Generator/SaveDatabaseConfig', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: configName,
-                dbType: dbType,
-                connectionString: connString,
-                isDefault: setAsDefault,
-                description: configDescription
-            })
-        });
+        let configs = getLocalConfigs();
+        
+        // Find existing
+        const existingIndex = configs.findIndex(c => c.name === configName);
+        
+        const newConfig = {
+            name: configName,
+            dbType: dbType,
+            connectionString: connString,
+            isDefault: setAsDefault,
+            description: configDescription,
+            lastUsed: new Date().toISOString()
+        };
 
-        const data = await response.json();
-
-        if (data.success) {
-            showToast(data.message, 'success');
-            
-            // Clear save form
-            document.getElementById('saveConfigName').value = '';
-            document.getElementById('saveConfigDescription').value = '';
-            document.getElementById('saveConfigDefault').checked = false;
-            
-            // Reload configurations list
-            loadSavedConfigurations();
-        } else {
-            showToast(data.message, 'error');
+        if (setAsDefault) {
+            configs.forEach(c => c.isDefault = false);
         }
+
+        if (existingIndex >= 0) {
+            configs[existingIndex] = newConfig;
+        } else {
+            configs.push(newConfig);
+        }
+
+        saveLocalConfigs(configs);
+        
+        showToast(`บันทึกการตั้งค่า '${configName}' ลงในเบราเซอร์เรียบร้อยแล้ว`, 'success');
+        
+        // Clear save form
+        document.getElementById('saveConfigName').value = '';
+        document.getElementById('saveConfigDescription').value = '';
+        document.getElementById('saveConfigDefault').checked = false;
+        
+        // Reload list
+        loadSavedConfigurations();
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
     }
 }
 
-async function loadConfiguration(configName) {
+function loadConfiguration(configName) {
     try {
-        const response = await fetch('/Generator/LoadDatabaseConfig', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: configName })
-        });
+        const configs = getLocalConfigs();
+        const config = configs.find(c => c.name === configName);
 
-        const data = await response.json();
-
-        if (data.success) {
+        if (config) {
             // Set the values in modal
-            document.querySelector(`input[name="modalDbType"][value="${data.config.dbType}"]`).checked = true;
-            document.getElementById('modalConnString').value = data.config.connectionString;
-            updateDbFields();
+            const dbRadio = document.querySelector(`input[name="modalDbType"][value="${config.dbType}"]`);
+            if (dbRadio) {
+                dbRadio.checked = true;
+                updateDbFields();
+            }
+            document.getElementById('modalConnString').value = config.connectionString;
+            document.getElementById('saveConfigName').value = config.name;
+            document.getElementById('saveConfigDescription').value = config.description || '';
+            document.getElementById('saveConfigDefault').checked = config.isDefault || false;
 
-            showToast(`Loaded configuration: ${configName}`, 'success');
+            showToast(`โหลดค่าจาก '${configName}' เรียบร้อย`, 'success');
         } else {
-            showToast(data.message, 'error');
+            showToast('ไม่พบข้อมูลการตั้งค่า', 'error');
         }
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
     }
 }
 
-async function deleteConfiguration(configName) {
-    if (!confirm(`Are you sure you want to delete configuration "${configName}"?`)) {
+function deleteConfiguration(configName) {
+    if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบการตั้งค่า "${configName}" ออกจากเบราเซอร์?`)) {
         return;
     }
 
     try {
-        const response = await fetch('/Generator/DeleteDatabaseConfig', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: configName })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            showToast(data.message, 'success');
-            loadSavedConfigurations();
-        } else {
-            showToast(data.message, 'error');
-        }
+        let configs = getLocalConfigs();
+        const newConfigs = configs.filter(c => c.name !== configName);
+        saveLocalConfigs(newConfigs);
+        
+        showToast('ลบการตั้งค่าเรียบร้อยแล้ว', 'success');
+        loadSavedConfigurations();
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
     }
 }
 
-async function exportConfigurations(includePasswords = false) {
+function exportConfigurations(includePasswords = false) {
     try {
-        const response = await fetch(`/Generator/ExportConfigurations?includePasswords=${includePasswords}`);
-        const json = await response.text();
+        const configs = getLocalConfigs();
+        if (configs.length === 0) {
+            showToast('ไม่มีข้อมูลการตั้งค่าให้ Export', 'warning');
+            return;
+        }
 
-        // Download as file
+        let exportData = configs.map(c => ({
+            ...c,
+            connectionString: includePasswords ? c.connectionString : maskConnectionString(c.connectionString)
+        }));
+
+        const json = JSON.stringify(exportData, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'database-configs.json';
+        a.download = `db-configs-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        showToast('Configurations exported successfully', 'success');
+        showToast('Export ข้อมูลเรียบร้อยแล้ว', 'success');
     } catch (error) {
         showToast(`Export failed: ${error.message}`, 'error');
     }
+}
+
+function maskConnectionString(conn) {
+    if (!conn) return '';
+    return conn.replace(/(Password|Pwd|pwd|password|User Id|Uid)=([^;]+)/gi, '$1=****');
 }
 
 // --- AS400 UI Helpers ---

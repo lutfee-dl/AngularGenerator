@@ -1,7 +1,9 @@
-# Visual Studio Essentials
+# Visual Studio / .NET Core
 [Bb]in/
 [Oo]bj/
+out/
 .vs/
+.vscode/
 
 # User-specific files
 *.rsuser
@@ -10,9 +12,21 @@
 *.userosscache
 *.sln.docstates
 
-# Visual Studio Code
-.vscode/
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
 
-# Project-specific
+# Local configuration
 appsettings.Development.json
 database-configs.json
+*.local.json
+
+# Web & Node
+node_modules/
+.npm/
+
+# Logs
+*.log
