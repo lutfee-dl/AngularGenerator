@@ -28,17 +28,19 @@ namespace AngularGenerator.Services.Builders
             // Always add service
             _tsBuilder.WithService();
             
+            // Always add formFields (needed for table display and forms)
+            _tsBuilder.WithFormInit();
+            
             // Conditionally add features based on user selections
             if (_definition.IsGet)
             {
                 _tsBuilder.WithGetAll();
-                _tsBuilder.WithColumnConfig();
             }
             
             if (_definition.IsPost || _definition.IsUpdate)
             {
                 _tsBuilder.WithReactiveForms();
-                _tsBuilder.WithFormInit();
+                _tsBuilder.WithFormGroup();
             }
             
             if (_definition.IsPost)
@@ -46,7 +48,7 @@ namespace AngularGenerator.Services.Builders
                 _tsBuilder.WithCreate();
             }
             
-            if (_definition.IsUpdate)
+            if (_definition.IsUpdate || _definition.IsGetById)
             {
                 _tsBuilder.WithUpdate();
             }
@@ -69,7 +71,7 @@ namespace AngularGenerator.Services.Builders
         /// <summary>
         /// Build Service TypeScript based on CRUD selections
         /// </summary>
-        public string BuildService(string apiBaseUrl = "/api")
+        public string BuildService(string apiBaseUrl = "http://localhost:3000/api/exemples")
         {
             _serviceBuilder = new ServiceBuilder(_definition);
             
@@ -117,7 +119,7 @@ namespace AngularGenerator.Services.Builders
             }
             else // TableView
             {
-                var tableBuilder = new HtmlBuilder(_definition);
+                var tableBuilder = new HtmlTableBuilder(_definition);
                 return tableBuilder.Build();
             }
         }
@@ -130,34 +132,38 @@ namespace AngularGenerator.Services.Builders
         {
             if (_definition.CssFramework != CSSFramework.BasicCSS)
             {
-                return string.Empty; // Bootstrap และ Material ใช้ CSS จาก library
+                return string.Empty; 
             }
 
             _cssBuilder = new CssBuilder(_definition);
             
-            // เพิ่ม CSS ตาม Layout Type
             if (_definition.LayoutType == UILayoutType.CardView)
             {
                 _cssBuilder
                     .WithCardStyles()
                     .WithButtonStyles()
                     .WithFormStyles()
-                    .WithModalStyles()
-                    .WithLoadingStyles()
-                    .WithResponsiveStyles();
+                    .WithModalStyles();
             }
-            else // TableView
+            else
             {
                 _cssBuilder
                     .WithTableStyles()
                     .WithButtonStyles()
                     .WithFormStyles()
-                    .WithModalStyles()
-                    .WithLoadingStyles()
-                    .WithResponsiveStyles();
+                    .WithModalStyles();
             }
             
             return _cssBuilder.Build();
+        }
+        
+        /// <summary>
+        /// Build separate Interface file
+        /// </summary>
+        public string BuildInterface()
+        {
+            var interfaceBuilder = new InterfaceBuilder(_definition);
+            return interfaceBuilder.Build();
         }
     }
 }

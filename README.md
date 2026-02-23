@@ -2,6 +2,10 @@
 
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512bd4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/download/dotnet/8.0) [![Angular](https://img.shields.io/badge/Angular-v17+-dd0031?style=flat-square&logo=angular)](https://angular.io/) 
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/) [![Bootstrap](https://img.shields.io/badge/Bootstrap-563D7C?style=flat-square&logo=bootstrap&logoColor=white)](https://getbootstrap.com/) [![Angular Material](https://img.shields.io/badge/Angular_Material-E91E63?style=flat-square&logo=angular&logoColor=white)](https://material.angular.io/) [![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0e18b5ab6a2a08082bb30f402de44e3be415a0fe
 A high-performance, professional low-code productivity tool designed to automate the creation of Angular CRUD components. Generate complete frontend modules including **Services, Interfaces, HTML, and TypeScript** in seconds from any data source.
 ---
 

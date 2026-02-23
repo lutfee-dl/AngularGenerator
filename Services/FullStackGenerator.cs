@@ -8,12 +8,12 @@ namespace AngularGenerator.Services
     /// </summary>
     public class FullStackGenerator
     {
-        private readonly DbSchemaService _dbService;
+        private readonly DbSchemaServiceFactory _dbFactory;
         private readonly AngularComponentFactory _factory;
 
-        public FullStackGenerator(DbSchemaService db, AngularComponentFactory factory)
+        public FullStackGenerator(DbSchemaServiceFactory dbFactory, AngularComponentFactory factory)
         {
-            _dbService = db; 
+            _dbFactory = dbFactory; 
             _factory = factory;
         }
 
@@ -27,11 +27,20 @@ namespace AngularGenerator.Services
             bool isGet, bool isGetById, bool isPost, bool isUpdate, bool isDelete,
             UILayoutType layoutType = UILayoutType.TableView,
             CSSFramework cssFramework = CSSFramework.BasicCSS,
-            string apiBaseUrl = "")
+            string apiBaseUrl = "",
+            string componentName = "",
+            bool separateInterface = false)
         {
             // 1. Get schema from database
-            var columns = _dbService.GetSchema(tableName);
+            var columns = _dbFactory.GetCurrentService().GetSchema(tableName);
             var fullModel = _factory.Create(tableName, columns);
+
+            if (!string.IsNullOrEmpty(componentName))
+            {
+                var formattedName = char.ToUpper(componentName[0]) + componentName.Substring(1);
+                fullModel.EntityName = formattedName;
+                fullModel.Selector = "app-" + componentName.ToLower();
+            }
 
             // 2. หา Primary Key field จาก fullModel
             var pkField = fullModel.Fields.FirstOrDefault(f => f.IsPrimaryKey);
@@ -54,7 +63,8 @@ namespace AngularGenerator.Services
                 IsDelete = isDelete,
 
                 LayoutType = layoutType,
-                CssFramework = cssFramework
+                CssFramework = cssFramework,
+                SeparateInterface = separateInterface
             };
 
             // 4. ตรวจสอบว่า PK field ถูกรวมอยู่ใน selectedFields หรือไม่
@@ -66,17 +76,19 @@ namespace AngularGenerator.Services
 
             var builder = new ComponentBuilder(generationModel);
 
-            fullModel.GeneratedTs = builder.BuildTypeScript();
-            fullModel.GeneratedService = builder.BuildService(apiBaseUrl);
-            fullModel.GeneratedHtml = builder.BuildHtml();
-            fullModel.GeneratedCss = builder.BuildCss();
-
-            // Copy UI preferences to fullModel
-            fullModel.LayoutType = layoutType;
-            fullModel.CssFramework = cssFramework;
+            generationModel.GeneratedTs = builder.BuildTypeScript();
+            generationModel.GeneratedService = builder.BuildService(apiBaseUrl);
+            generationModel.GeneratedHtml = builder.BuildHtml();
+            
+            // Generate separate interface file if requested
+            if (separateInterface)
+            {
+                generationModel.GeneratedInterface = builder.BuildInterface();
+            }
+            generationModel.GeneratedCss = builder.BuildCss();
 
             // Return to controller for display
-            return await Task.FromResult(fullModel);
+            return await Task.FromResult(generationModel);
         }
     }
 }
