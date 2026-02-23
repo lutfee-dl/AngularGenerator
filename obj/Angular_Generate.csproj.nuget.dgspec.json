@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\ProjectFinal\\Final\\AngularGenerator\\Angular_Generate.csproj": {}
+    "D:\\ProjectFinal\\angular\\AngularGenerator\\Angular_Generate.csproj": {}
   },
   "projects": {
-    "D:\\ProjectFinal\\Final\\AngularGenerator\\Angular_Generate.csproj": {
+    "D:\\ProjectFinal\\angular\\AngularGenerator\\Angular_Generate.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\ProjectFinal\\Final\\AngularGenerator\\Angular_Generate.csproj",
+        "projectUniqueName": "D:\\ProjectFinal\\angular\\AngularGenerator\\Angular_Generate.csproj",
         "projectName": "Angular_Generate",
-        "projectPath": "D:\\ProjectFinal\\Final\\AngularGenerator\\Angular_Generate.csproj",
+        "projectPath": "D:\\ProjectFinal\\angular\\AngularGenerator\\Angular_Generate.csproj",
         "packagesPath": "C:\\Users\\bp6098b\\.nuget\\packages\\",
-        "outputPath": "D:\\ProjectFinal\\Final\\AngularGenerator\\obj\\",
+        "outputPath": "D:\\ProjectFinal\\angular\\AngularGenerator\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -90,7 +90,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
