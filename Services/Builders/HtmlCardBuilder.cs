@@ -101,7 +101,9 @@ namespace AngularGenerator.Services.Builders
         {
             if (_renderer.RequiresSpecialTableRendering())
             {
-                _sb.AppendLine("    @if (isLoading() && !showModal()) {");
+                var hasCrud = _definition.IsPost || _definition.IsUpdate || _definition.IsDelete || _definition.IsGetById;
+                var condition = hasCrud ? "isLoading() && !showModal()" : "isLoading()";
+                _sb.AppendLine($"    @if ({condition}) {{");
                 _sb.AppendLine("      <div style=\"display: flex; justify-content: center; align-items: center; padding: 80px;\">");
                 _sb.AppendLine("        <mat-spinner diameter=\"50\"></mat-spinner>");
                 _sb.AppendLine("      </div>");
@@ -110,7 +112,7 @@ namespace AngularGenerator.Services.Builders
             }
             else
             {
-                if (_definition.IsPost || _definition.IsUpdate || _definition.IsGetById)
+                if (_definition.IsPost || _definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
                 {
                     _sb.AppendLine("  @if (isLoading() && !showModal()) {");
                 }

@@ -89,14 +89,9 @@ namespace AngularGenerator.Services.Builders.Base
         /// </summary>
         protected virtual void BuildLoadingIndicator()
         {
-            if (_definition.IsPost || _definition.IsUpdate)
-            {
-                _sb.AppendLine("  @if (isLoading() && !showModal()) {");
-            }
-            else
-            {
-                _sb.AppendLine("  @if (isLoading()) {");
-            }
+            var hasCrud = _definition.IsPost || _definition.IsUpdate || _definition.IsDelete || _definition.IsGetById;
+            var condition = hasCrud ? "isLoading() && !showModal()" : "isLoading()";
+            _sb.AppendLine($"  @if ({condition}) {{");
             _sb.AppendLine("    <div class=\"loading\">Loading...</div>");
             _sb.AppendLine("  }");
             _sb.AppendLine();

@@ -179,53 +179,27 @@ namespace AngularGenerator.Services.Builders
             // Add displayedColumns for Material Table
             if (_renderer.RequiresSpecialTableRendering())
             {
-                var pkField = _definition.Fields.FirstOrDefault(f => f.IsPrimaryKey)?.FieldName ?? "id";
-                var hasCheckbox = _definition.Fields.Any(f => f.UIControl == ControlType.Checkbox);
-                var columns = new List<string> { $"'{pkField}'" };
-                
-                // Add other fields (exclude PK and checkbox)
-                columns.AddRange(_definition.Fields
-                    .Where(f => !f.IsPrimaryKey && f.UIControl != ControlType.Checkbox)
-                    .Select(f => $"'{f.FieldName}'"));
-                
-                if (hasCheckbox)
-                {
-                    columns.Add("'status'");
-                }
-                
-                if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
-                {
-                    columns.Add("'actions'");
-                }
-                
-                var columnsArray = string.Join(", ", columns);
+                // New Dynamic Style for Material
+                var hasActions = _definition.IsUpdate || _definition.IsDelete || _definition.IsGetById;
+                var columnsValue = hasActions 
+                    ? "[...this.formFields.map(f => f.key), 'actions']"
+                    : "this.formFields.map(f => f.key)";
                 
                 AddProperty(new PropertySegment
                 {
                     Name = "displayedColumns",
                     Type = "string[]",
-                    InitialValue = $"[{columnsArray}]",
+                    InitialValue = columnsValue,
                     AccessModifier = "public"
                 });
                 
-                // Add cardFields for Material Card view
-                var cardFieldsList = _definition.Fields
-                    .Where(f => !f.IsPrimaryKey && f.UIControl != ControlType.Checkbox)
-                    .Select(f => $"{{ key: '{f.FieldName}', label: '{f.Label}', type: '{GetFieldType(f)}' }}")
-                    .ToList();
-                
-                if (cardFieldsList.Any())
+                AddProperty(new PropertySegment
                 {
-                    var cardFieldsValue = $"[{string.Join(", ", cardFieldsList)}]";
-                    
-                    AddProperty(new PropertySegment
-                    {
-                        Name = "cardFields",
-                        Type = "Array<{key: string, label: string, type: string}>",
-                        InitialValue = cardFieldsValue,
-                        AccessModifier = "public"
-                    });
-                }
+                    Name = "cardFields",
+                    Type = "",
+                    InitialValue = "this.formFields",
+                    AccessModifier = "public readonly"
+                });
             }
             
             AddProperty(new PropertySegment 
@@ -273,7 +247,6 @@ namespace AngularGenerator.Services.Builders
                 "const col = this.sortColumn();",
                 "const dir = this.sortDirection();",
                 "",
-                "// 1. Filter (ปรับให้ค้นหาครอบคลุมขึ้น)",
                 "if (term) {",
                 "  data = data.filter(item => ",
                 "    Object.values(item).some(val => ",
@@ -304,8 +277,6 @@ namespace AngularGenerator.Services.Builders
             }
             else
             {
-                // Basic/Bootstrap: manual pagination slice
-                filterLogic.Add("// 3. Pagination Logic");
                 filterLogic.Add("const startIndex = (this.currentPage() - 1) * this.pageSize();");
                 filterLogic.Add("return data.slice(startIndex, startIndex + this.pageSize());");
             }
