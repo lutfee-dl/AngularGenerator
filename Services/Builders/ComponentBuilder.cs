@@ -35,6 +35,7 @@ namespace AngularGenerator.Services.Builders
             if (_definition.IsGet)
             {
                 _tsBuilder.WithGetAll();
+                _tsBuilder.WithExport();
             }
             
             if (_definition.IsPost || _definition.IsUpdate)

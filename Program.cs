@@ -1,4 +1,7 @@
+using System.Runtime.CompilerServices;
 using AngularGenerator.Services;
+
+[assembly: InternalsVisibleTo("AngularGenerator.Tests")]
 
 var builder = WebApplication.CreateBuilder(args);
 

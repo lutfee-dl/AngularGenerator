@@ -26,8 +26,16 @@ namespace AngularGenerator.Services.Builders
         
         private void InitializeDefaults()
         {
-            // Default Angular imports (v20+)
-            AddImport(new[] { "Component", "inject", "signal", "computed", "OnInit" }, "@angular/core");
+            // Default Angular imports
+            if (_renderer.RequiresSpecialTableRendering())
+            {
+                // Material: needs AfterViewInit + ViewChild for MatPaginator
+                AddImport(new[] { "Component", "inject", "signal", "computed", "OnInit", "ViewChild", "AfterViewInit" }, "@angular/core");
+            }
+            else
+            {
+                AddImport(new[] { "Component", "inject", "signal", "computed", "OnInit" }, "@angular/core");
+            }
             AddImport(new[] { "CommonModule" }, "@angular/common");
             AddImport(new[] { "FormsModule" }, "@angular/forms");
             
@@ -62,6 +70,12 @@ namespace AngularGenerator.Services.Builders
                     else if (module == "MatCardModule") from = "@angular/material/card";
                     else if (module == "MatOptionModule") from = "@angular/material/core";
                     else if (module == "MatProgressSpinnerModule") from = "@angular/material/progress-spinner";
+                    else if (module == "MatPaginatorModule")
+                    {
+                        // MatPaginator class needed for @ViewChild
+                        AddImport(new[] { "MatPaginatorModule", "MatPaginator" }, "@angular/material/paginator");
+                        continue;
+                    }
                     AddImport(new[] { module }, from);
                 }
                 
@@ -251,7 +265,7 @@ namespace AngularGenerator.Services.Builders
                 AccessModifier = "public"
             });
             
-            // Computed filtered list with pagination
+            // Computed filtered list
             var filterLogic = new List<string>
             {
                 "let data = [...this.dataList()];",
@@ -280,11 +294,21 @@ namespace AngularGenerator.Services.Builders
                 "    return 0;",
                 "  });",
                 "}",
-                "",
-                "// 3. Pagination Logic",
-                "const startIndex = (this.currentPage() - 1) * this.pageSize();",
-                "return data.slice(startIndex, startIndex + this.pageSize());"
+                ""
             };
+            
+            if (_renderer.RequiresSpecialTableRendering())
+            {
+                // Material: filteredList returns ALL (mat-paginator handles slicing)
+                filterLogic.Add("return data; // mat-paginator handles pagination");
+            }
+            else
+            {
+                // Basic/Bootstrap: manual pagination slice
+                filterLogic.Add("// 3. Pagination Logic");
+                filterLogic.Add("const startIndex = (this.currentPage() - 1) * this.pageSize();");
+                filterLogic.Add("return data.slice(startIndex, startIndex + this.pageSize());");
+            }
             
             AddProperty(new PropertySegment
             {
@@ -295,14 +319,30 @@ namespace AngularGenerator.Services.Builders
             });
             
             // Pagination properties
-            AddProperty(new PropertySegment
+            if (_renderer.RequiresSpecialTableRendering())
             {
-                Name = "currentPage",
-                Type = "number",
-                InitialValue = "signal<number>(1)",
-                IsSignal = false,
-                AccessModifier = "public"
-            });
+                // Material: 0-indexed (mat-paginator uses pageIndex)
+                AddProperty(new PropertySegment
+                {
+                    Name = "currentPage",
+                    Type = "number",
+                    InitialValue = "signal<number>(0)",
+                    IsSignal = false,
+                    AccessModifier = "public"
+                });
+            }
+            else
+            {
+                // Basic/Bootstrap: 1-indexed
+                AddProperty(new PropertySegment
+                {
+                    Name = "currentPage",
+                    Type = "number",
+                    InitialValue = "signal<number>(1)",
+                    IsSignal = false,
+                    AccessModifier = "public"
+                });
+            }
             
             AddProperty(new PropertySegment
             {
@@ -312,7 +352,19 @@ namespace AngularGenerator.Services.Builders
                 IsSignal = false,
                 AccessModifier = "public"
             });
-            
+
+            if (_renderer.RequiresSpecialTableRendering())
+            {
+                // Material: paginatedList for mat-table dataSource
+                AddProperty(new PropertySegment
+                {
+                    Name = "paginatedList",
+                    Type = "",
+                    InitialValue = "computed(() => {\n    const data = this.filteredList();\n    const startIndex = this.currentPage() * this.pageSize();\n    return data.slice(startIndex, startIndex + this.pageSize());\n  })",
+                    AccessModifier = "public"
+                });
+            }
+
             // Add setPageSize method
             AddMethod(new MethodSegment
             {
@@ -322,12 +374,14 @@ namespace AngularGenerator.Services.Builders
                 BodyLines = new List<string>
                 {
                     "this.pageSize.set(size);",
-                    "this.currentPage.set(1);"
+                    _renderer.RequiresSpecialTableRendering()
+                        ? "this.currentPage.set(0);"
+                        : "this.currentPage.set(1);"
                 },
                 AccessModifier = "public"
             });
             
-            // Add totalPages computed
+            // totalPages computed
             AddProperty(new PropertySegment
             {
                 Name = "totalPages",
@@ -341,7 +395,7 @@ namespace AngularGenerator.Services.Builders
                 AccessModifier = "public"
             });
             
-            // Add setPage method
+            // setPage method
             AddMethod(new MethodSegment
             {
                 Name = "setPage",
@@ -349,12 +403,28 @@ namespace AngularGenerator.Services.Builders
                 ReturnType = "void",
                 BodyLines = new List<string>
                 {
-                    "if (page >= 1 && page <= this.totalPages()) {",
-                    "  this.currentPage.set(page);",
-                    "}"
+                    "this.currentPage.set(page);"
                 },
                 AccessModifier = "public"
             });
+
+            if (_renderer.RequiresSpecialTableRendering())
+            {
+                // Material: onPageChange for mat-paginator (page) event
+                AddMethod(new MethodSegment
+                {
+                    Name = "onPageChange",
+                    Parameters = new List<string> { "event: any" },
+                    ReturnType = "void",
+                    BodyLines = new List<string>
+                    {
+                        "this.currentPage.set(event.pageIndex);",
+                        "this.pageSize.set(event.pageSize);"
+                    },
+                    AccessModifier = "public"
+                });
+            }
+
             
             // Load data method
             var loadMethod = new MethodSegment
@@ -633,6 +703,149 @@ namespace AngularGenerator.Services.Builders
             AddMethod(deleteMethod);
             return this;
         }
+
+        public TypeScriptBuilder WithExport()
+        {
+            // ─── Excel Export ─────────────────────────────────────────────────────
+            AddMethod(new MethodSegment
+            {
+                Name = "exportToExcel",
+                ReturnType = "void",
+                BodyLines = new List<string>
+                {
+                    "// Requires: npm install xlsx",
+                    "import('xlsx').then(XLSX => {",
+                    "  const data = this.dataList();",
+                    "  const worksheet = XLSX.utils.json_to_sheet(data);",
+                    "  const workbook = XLSX.utils.book_new();",
+                    $"  XLSX.utils.book_append_sheet(workbook, worksheet, '{_definition.EntityName}');",
+                    $"  XLSX.writeFile(workbook, '{_definition.EntityName.ToLower()}_export.xlsx');",
+                    "});"
+                },
+                AccessModifier = "public"
+            });
+
+            // ─── PDF Export ───────────────────────────────────────────────────────
+            // jspdf@^2.5.2 + jspdf-autotable@^3.8.3
+            // async IIFE + sequential await — most reliable with Angular bundler
+            AddMethod(new MethodSegment
+            {
+                Name = "exportToPdf",
+                ReturnType = "void",
+                BodyLines = new List<string>
+                {
+                    "// Requires: npm install jspdf@^2.5.2 jspdf-autotable@^3.8.3",
+                    "(async () => {",
+                    "  try {",
+                    "    // Step 1: load jsPDF",
+                    "    const jsPDFModule = await import('jspdf');",
+                    "    const jsPDF = jsPDFModule.default ?? (jsPDFModule as any).jsPDF;",
+                    "",
+                    "    // Step 2: load autoTable (v3.x exports default function)",
+                    "    const autoTableModule = await import('jspdf-autotable');",
+                    "    const autoTable = autoTableModule.default;",
+                    "",
+                    "    // Step 3: build document (landscape fits more columns)",
+                    "    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });",
+                    "",
+                    "    // All records (ignore pagination)",
+                    "    const allData = this.dataList();",
+                    "    const selectedFields = this.formFields;",
+                    "",
+                    "    // Build head and body as plain string[][]",
+                    "    const head: string[][] = [selectedFields.map(f => f.label)];",
+                    "    const body: string[][] = allData.map(item =>",
+                    "      selectedFields.map(f => {",
+                    "        const v = (item as any)[f.key];",
+                    "        return (v === null || v === undefined) ? '-' : String(v);",
+                    "      })",
+                    "    );",
+                    "",
+                    "    // autoTable with optimized settings",
+                    "    autoTable(doc, {",
+                    "      head,",
+                    "      body,",
+                    "      startY: 20,",
+                    "      theme: 'grid',",
+                    "",
+                    "      // Header styles — shown every page",
+                    "      headStyles: {",
+                    "        fillColor: [41, 128, 185],",
+                    "        textColor: 255,",
+                    "        fontStyle: 'bold',",
+                    "        fontSize: 5,",
+                    "        halign: 'center',",
+                    "        cellPadding: 1,",
+                    "        minCellWidth: 8",
+                    "      },",
+                    "",
+                    "      // Body styles — tiny font to fit many columns",
+                    "      bodyStyles: {",
+                    "        fontSize: 4.5,",
+                    "        textColor: [30, 30, 30],",
+                    "        cellPadding: 1,",
+                    "        minCellHeight: 4,",
+                    "        minCellWidth: 8",
+                    "      },",
+                    "",
+                    "      alternateRowStyles: { fillColor: [245, 248, 250] },",
+                    "",
+                    "      styles: {",
+                    "        overflow: 'linebreak',",
+                    "        cellWidth: 'auto',",
+                    "        halign: 'left',",
+                    "        valign: 'middle',",
+                    "        fontSize: 4.5",
+                    "      },",
+                    "",
+                    "      margin: { top: 20, left: 5, right: 5, bottom: 15 },",
+                    "      showHead: 'everyPage',",
+                    "      tableWidth: 'auto',",
+                    "",
+                    "      // Title + date + page number on every page",
+                    "      didDrawPage: (data: any) => {",
+                    "        const docAny = doc as any;",
+                    "",
+                    "        // Title",
+                    "        docAny.setFontSize(12);",
+                    "        docAny.setTextColor(40, 40, 40);",
+                    $"        docAny.text('{_definition.EntityName} Export Report', data.settings.margin.left, 12);",
+                    "",
+                    "        // Date",
+                    "        docAny.setFontSize(7);",
+                    "        docAny.setTextColor(100, 100, 100);",
+                    "        const now = new Date().toLocaleDateString('th-TH');",
+                    "        docAny.text('Export: ' + now, data.settings.margin.left, 16);",
+                    "",
+                    "        // Page number",
+                    "        const pageCount = docAny.internal.getNumberOfPages();",
+                    "        docAny.setFontSize(7);",
+                    "        docAny.setTextColor(128, 128, 128);",
+                    "        const pageText = 'หน้า ' + data.pageNumber + '/' + pageCount;",
+                    "        const pageWidth = docAny.internal.pageSize.getWidth();",
+                    "        docAny.text(pageText, pageWidth - 20, 12);",
+                    "      }",
+                    "    });",
+                    "",
+                    $"    doc.save('{_definition.EntityName.ToLower()}_report_' + new Date().getTime() + '.pdf');",
+                    "",
+                    "  } catch (err: any) {",
+                    "    console.error('[exportToPdf] error:', err);",
+                    "    if (err?.message?.includes('Cannot find module')) {",
+                    "      alert('กรุณาติดตั้ง:\\n npm install jspdf@^2.5.2 jspdf-autotable@^3.8.3');",
+                    "    } else {",
+                    "      alert('Export PDF ล้มเหลว: ' + (err?.message ?? err));",
+                    "    }",
+                    "  }",
+                    "})();"
+                },
+                AccessModifier = "public"
+            });
+
+            return this;
+        }
+
+
         
         public TypeScriptBuilder WithFormInit()
         {
@@ -767,20 +980,37 @@ namespace AngularGenerator.Services.Builders
             if (_definition.IsGet)
                 constructorLines.Add("this.loadData();");
             
-            // Only add constructor if there are lines to execute
             if (constructorLines.Any())
             {
-                var constructorMethod = new MethodSegment
+                AddMethod(new MethodSegment
                 {
                     Name = "constructor",
                     BodyLines = constructorLines,
                     AccessModifier = "public"
-                };
-                
-                AddMethod(constructorMethod);
+                });
             }
             
-            // Add empty ngOnInit
+            // ngAfterViewInit — Material only: wire paginator
+            if (_renderer.RequiresSpecialTableRendering())
+            {
+                AddMethod(new MethodSegment
+                {
+                    Name = "ngAfterViewInit",
+                    ReturnType = "void",
+                    BodyLines = new List<string>
+                    {
+                        "// เชื่อมต่อ paginator กับ signals",
+                        "if (this.paginator) {",
+                        "  this.paginator.page.subscribe((event) => {",
+                        "    this.onPageChange(event);",
+                        "  });",
+                        "}"
+                    },
+                    AccessModifier = "public"
+                });
+            }
+            
+            // ngOnInit
             AddMethod(new MethodSegment
             {
                 Name = "ngOnInit",
@@ -814,8 +1044,18 @@ namespace AngularGenerator.Services.Builders
             }
             sb.AppendLine("})");
             
-            sb.AppendLine($"export class {_definition.EntityName}Component implements OnInit {{");
+            var classImplements = _renderer.RequiresSpecialTableRendering()
+                ? "implements OnInit, AfterViewInit"
+                : "implements OnInit";
+            sb.AppendLine($"export class {_definition.EntityName}Component {classImplements} {{");
             sb.AppendLine();
+            
+            // @ViewChild for MatPaginator (Material only)
+            if (_renderer.RequiresSpecialTableRendering())
+            {
+                sb.AppendLine("  @ViewChild(MatPaginator) paginator!: MatPaginator;");
+                sb.AppendLine();
+            }
             
             // Properties
             foreach (var prop in _properties)

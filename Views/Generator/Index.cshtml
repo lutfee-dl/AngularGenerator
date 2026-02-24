@@ -34,19 +34,37 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="~/css/generator.css" asp-append-version="true">
+    
+    <!-- Fomantic UI (Modern Fork of Semantic UI) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.3/dist/semantic.min.css">
 </head>
 <body>
 
     <nav class="main-header shadow-sm d-flex justify-content-between align-items-center px-4 py-2 bg-primary" 
         style="border-bottom: 2px solid #000000;">
         
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center gap-2">
             <div class="brand-icon-wrapper me-3">
                 <i class="fa-brands fa-angular text-white fs-4"></i>
             </div>
             <h4 class="m-0 fw-bold text-white tracking-tight" style="letter-spacing: -0.5px;">
                 Angular <span class="text-white fw-light">CRUD Generator</span>
             </h4>
+            <!-- Version badge -->
+            <span style="
+                background: rgba(255,255,255,0.15);
+                border: 1px solid rgba(255,255,255,0.35);
+                color: #fff;
+                font-size: 1rem;
+                font-weight: 700;
+                padding: 2px 8px;
+                border-radius: 99px;
+                letter-spacing: 0.5px;
+                white-space: nowrap;
+                backdrop-filter: blur(4px);
+            ">
+               รองรับ Angular v17+
+            </span>
         </div>
 
         <div class="d-flex align-items-center gap-3">
@@ -74,7 +92,7 @@
 
                 <div class="col-md-4">
                     <div class="card card-settings mb-4 shadow-sm">
-                        <div class="card-header">Configure</div>
+                        <div class="card-header bg-primary">Configure</div>
                         <div class="card-body bg-light">
 
                             <!-- Data Source Selection -->
@@ -107,32 +125,31 @@
                             <div id="sqlSection" class="data-source-section">
                                 <!-- Standard Table Input (Hidden if AS400) -->
                                 <div id="standardTableSection" class="mb-3">
-                                    <label class="form-label fw-bold text-primary">Table Name</label>
+                                    <label class="form-label fw-bold text-primary">Select Table</label>
                                     
-                                    <!-- Search Box -->
-                                    <div class="input-group input-group-sm mb-2">
-                                        <span class="input-group-text"><i class="fa-solid fa-search"></i></span>
-                                        <input type="text" class="form-control" id="tableSearchInput" 
-                                               placeholder="Search tables..." 
-                                               onkeyup="filterTables()"
+                                    <div class="joined-group mb-2">
+                                        <!-- Native input + datalist: search/autocomplete with zero JS library dependency -->
+                                        <input type="text" 
+                                               name="tableName" 
+                                               id="tableNameInput"
+                                               class="form-control"
+                                               list="tableDataList"
+                                               placeholder="Search &amp; Select Table..."
                                                autocomplete="off">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="clearTableSearch()" title="Clear search">
-                                            <i class="fa-solid fa-xmark"></i>
-                                        </button>
-                                    </div>
-                                    
-                                    <!-- Table Dropdown -->
-                                    <div class="input-group mb-2">
-                                        <select class="form-select" id="tableDropdown" 
-                                                onchange="selectTableFromDropdown()" 
-                                                size="5" 
-                                                style="height: auto; max-height: 200px; overflow-y: auto;">
-                                            
-                                        </select>
-                                        <button class="btn btn-outline-secondary" type="button" onclick="loadTableList()" title="Refresh table list">
+                                        <datalist id="tableDataList">
+                                            <!-- options injected by loadTableList() -->
+                                        </datalist>
+                                        <button class="btn-refresh" type="button" onclick="loadTableList()" title="Refresh table list">
                                             <i class="fa-solid fa-rotate-right"></i>
                                         </button>
                                     </div>
+                                    
+                                    <button class="btn btn-primary w-100" type="button" id="btnLoad" onclick="loadColumns()"
+                                            data-bs-toggle="tooltip" title="Load columns for the specified table">
+                                        <i class="fa-solid fa-sync"></i> Load Columns Data
+                                    </button>
+
+                                    <small class="text-muted" id="loadStatus"></small>
                                 </div>
 
                                 <!-- AS400 Special Fields (Shown only if AS400) -->
@@ -150,24 +167,17 @@
                                         </div>
                                     </div>
                                     <small class="text-muted mt-1 d-block">
-                                        <i class="fas fa-info-circle"></i> AS400 requires both for field discovery.
+                                        <i class="fas fa-info-circle"></i> AS400 requires both Library and Table Name for field discovery.
                                     </small>
+
+                                    <button class="btn btn-primary w-100 mt-2" type="button" id="btnLoadAs400" onclick="loadColumns()"
+                                            data-bs-toggle="tooltip" title="Load columns from AS400 table">
+                                        <i class="fa-solid fa-sync"></i> Load Columns Data
+                                    </button>
+
+                                    <small class="text-muted" id="loadStatusAs400"></small>
                                 </div>
                                     
-                                <!-- Manual Input & Load (Common) -->
-                                <div class="mb-3">
-                                    <div class="input-group">
-                                        <input type="text" id="tableNameInput" name="tableName" class="form-control"
-                                               placeholder="or type table name manually" value="@ViewBag.LastTableName"
-                                               onkeyup="syncAs400FromManual()"
-                                               data-bs-toggle="tooltip" title="Type the table name manually and click Load">
-                                        <button class="btn btn-primary" type="button" id="btnLoad" onclick="loadColumns()"
-                                                data-bs-toggle="tooltip" title="Load columns for the specified table">
-                                            <i class="fa-solid fa-sync"></i> Load
-                                        </button>
-                                    </div>
-                                    <small class="text-muted" id="loadStatus"></small>
-                                </div>
                             </div>
 
                             <!-- REST API Section -->
@@ -184,7 +194,6 @@
                                         <label class="form-label">Method</label>
                                         <select class="form-select form-select-sm" id="httpMethod">
                                             <option value="GET" selected>GET</option>
-                                            <option value="POST">POST</option>
                                         </select>
                                     </div>
                                     <div class="col-6">
@@ -508,6 +517,25 @@
                             <span id="cliCommand">ng generate component <strong>@(Model?.Selector ?? "<component-name>")</strong> --standalone</span>
                             <button type="button" class="btn btn-sm btn-dark" onclick="copyText('cliCommand', true)"><i class="fa-regular fa-copy"></i></button>
                         </div>        
+
+                        <!-- Dependency Alert for Export Feature -->
+                        @if (Model.IsGet)
+                        {
+                            <div class="alert alert-warning border-start border-4 border-warning shadow-sm mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-terminal me-2 fs-5"></i>
+                                    <strong class="text-dark">Required Dependencies</strong>
+                                </div>
+                                <p class="small mb-2">To use the <strong>Excel & PDF Export</strong> features, please run this command in your project terminal:</p>
+                                <div class="bg-dark text-white p-2 rounded d-flex justify-content-between align-items-center font-monospace" style="font-size: 0.85rem;">
+                                    <span id="npmCommand">npm install xlsx@^0.18.5 jspdf@^2.5.2 jspdf-autotable@^3.8.3</span>
+                                    <button type="button" class="btn btn-sm btn-outline-light py-0 px-2" onclick="copyText('npmCommand', true)" title="Copy Command">
+                                        <i class="fa-regular fa-copy" style="font-size: 0.7rem;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+
                         <div class="card card-result shadow-sm h-75" style="margin-bottom: 10px;" id="resultCard">
                             <div class="card-header">
                                 <span>Result for @Model?.EntityName</span>
@@ -767,6 +795,12 @@
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
     
+    <!-- jQuery (Required for Fomantic UI) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Fomantic UI JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.3/dist/semantic.min.js"></script>
+
     <!-- Custom JavaScript -->
     <script src="~/js/generator.js" asp-append-version="true"></script>
 </body>

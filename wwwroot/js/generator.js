@@ -1,6 +1,11 @@
 // Angular CRUD Generator - JavaScript Functions
 var currentDbType = 'SqlServer';
 
+// Helper: get current table name from input
+function getTableName() {
+    return (document.getElementById('tableNameInput') || {}).value?.trim() || '';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     checkDbStatus();
     toggleCrudOptions();
@@ -36,16 +41,14 @@ function handleGenerateClick() {
         return;
     }
 
-    // SQL mode - ใช้ AJAX แทนการ submit form
+    // SQL mode
     if (sqlChecked) {
-        var tableName = document.getElementById('tableNameInput').value.trim();
+        var tableName = getTableName();
         if (!tableName) {
-            showToast('กรุณากรอก Table Name', 'warning');
-            document.getElementById('tableNameInput').focus();
+            showToast('กรุณาเลือก Table Name', 'warning');
+            document.getElementById('tableNameInput')?.focus();
             return;
         }
-
-        // เรียก C# backend ด้วย AJAX
         generateFromSql();
     }
 }
@@ -154,44 +157,37 @@ function checkDbStatus() {
 
 // --- Load Table List ---
 async function loadTableList() {
-    const dropdown = document.getElementById('tableDropdown');
     const status = document.getElementById('loadStatus');
-    
+    const input = document.getElementById('tableNameInput');
+    const datalist = document.getElementById('tableDataList');
+    const refreshBtn = document.querySelector('.btn-refresh');
+
     try {
-        // Show loading state
-        dropdown.innerHTML = '<option value="">⏳ Loading tables...</option>';
+        if (refreshBtn) refreshBtn.disabled = true;
         if (status) {
             status.textContent = 'Loading tables...';
             status.className = 'text-info small';
         }
-                
+
         const response = await fetch('/Generator/GetTables');
         const data = await response.json();
 
         if (data.success) {
-            dropdown.innerHTML = '<option value="">-- Select Table --</option>';
+            // Inject <option> values into <datalist> — browser shows autocomplete/dropdown
+            datalist.innerHTML = data.tables
+                .map(t => `<option value="${t}">`)
+                .join('');
 
-            // เก็บรายการตารางทั้งหมดไว้ใน attribute สำหรับ filter
-            dropdown.setAttribute('data-all-tables', JSON.stringify(data.tables));
-
-            data.tables.forEach(table => {
-                const option = document.createElement('option');
-                option.value = table;
-                option.textContent = table;
-                dropdown.appendChild(option);
-            });
-
-            // แสดงจำนวนตาราง
             updateTableCount(data.tables.length, data.tables.length);
-            
-            // Show success message briefly
+
             if (data.tables.length > 0) {
                 showToast(`Loaded ${data.tables.length} tables`, 'success');
+                if (status) status.textContent = '';
             } else {
                 showToast('No tables found', 'warning');
+                if (status) status.textContent = 'No tables found';
             }
         } else {
-            dropdown.innerHTML = '<option value="">-- No tables found --</option>';
             console.error('Failed to load tables:', data.message);
             if (status) {
                 status.textContent = 'Failed to load tables';
@@ -200,63 +196,27 @@ async function loadTableList() {
         }
     } catch (error) {
         console.error('Failed to load table list:', error);
-        dropdown.innerHTML = '<option value="">-- Error loading tables --</option>';
         if (status) {
             status.textContent = 'Error loading tables';
             status.className = 'text-danger small';
         }
-        showToast('Failed to load table list', 'error');
+        showToast('Failed to load table list: ' + error.message, 'error');
+    } finally {
+        if (refreshBtn) refreshBtn.disabled = false;
     }
 }
 
-// --- Filter Tables ---
-function filterTables() {
-    const searchInput = document.getElementById('tableSearchInput');
-    const dropdown = document.getElementById('tableDropdown');
-    const searchText = searchInput.value.toLowerCase();
-
-    // ดึงรายการตารางทั้งหมด
-    const allTablesJson = dropdown.getAttribute('data-all-tables');
-    if (!allTablesJson) return;
-
-    const allTables = JSON.parse(allTablesJson);
-
-    // กรองตาราง
-    const filteredTables = allTables.filter(table =>
-        table.toLowerCase().includes(searchText)
-    );
-
-    // อัพเดท dropdown
-    dropdown.innerHTML = '<option value="">-- Select Table --</option>';
-    filteredTables.forEach(table => {
-        const option = document.createElement('option');
-        option.value = table;
-        option.textContent = table;
-        dropdown.appendChild(option);
-    });
-
-    // แสดงจำนวนตาราง
-    updateTableCount(filteredTables.length, allTables.length);
-}
-
-// --- Clear Table Search ---
-function clearTableSearch() {
-    document.getElementById('tableSearchInput').value = '';
-    filterTables();
-}
+// Replaced by Semantic UI
+function filterTables() { }
+function clearTableSearch() { }
 
 // --- Clear Table and Field Lists ---
 function clearTableAndFieldLists() {
-    // Clear table dropdown
-    const dropdown = document.getElementById('tableDropdown');
-    dropdown.innerHTML = '<option value="">-- Select Table --</option>';
-    dropdown.removeAttribute('data-all-tables');
-    
-    // Clear table input
-    document.getElementById('tableNameInput').value = '';
-    
-    // Clear search
-    document.getElementById('tableSearchInput').value = '';
+    // Clear native input + datalist
+    const input = document.getElementById('tableNameInput');
+    const datalist = document.getElementById('tableDataList');
+    if (input) input.value = '';
+    if (datalist) datalist.innerHTML = '';
     
     // Clear field containers
     const sqlFieldContainer = document.getElementById('sqlFieldContainer');
@@ -295,24 +255,17 @@ function updateTableCount(filtered, total) {
     }
 }
 
-// --- Select Table from Dropdown ---
-function selectTableFromDropdown() {
-    const dropdown = document.getElementById('tableDropdown');
-    const input = document.getElementById('tableNameInput');
-
-    if (dropdown.value) {
-        input.value = dropdown.value;
-    }
-}
 
 // --- Logic: Load Columns (AJAX) ---
 function loadColumns() {
-    var tableName = document.getElementById('tableNameInput').value;
-    var btn = document.getElementById('btnLoad');
-    var status = document.getElementById('loadStatus');
+    var tableName = getTableName();
+    // ปุ่มและ status แตกต่างกันระหว่าง SQL / AS400
+    var isAs400 = currentDbType === 'AS400';
+    var btn    = document.getElementById(isAs400 ? 'btnLoadAs400' : 'btnLoad');
+    var status = document.getElementById(isAs400 ? 'loadStatusAs400' : 'loadStatus');
     var container = document.getElementById('sqlFieldContainer');
     if (!tableName) {
-        showToast('กรุณากรอก Table Name', 'warning'); return;
+        showToast('กรุณาระบุ Table Name', 'warning'); return;
     }
 
     btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
@@ -321,7 +274,8 @@ function loadColumns() {
     fetch('/Generator/GetColumns?tableName=' + tableName)
         .then(r => r.json())
         .then(data => {
-            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-sync"></i> Load';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-sync"></i> Load Columns Data';
             container.innerHTML = '';
 
             if (data.success) {
@@ -422,7 +376,7 @@ async function downloadAllAsZip() {
 
         const zip = new JSZip();
 
-        const entityName = document.getElementById('tableNameInput')?.value || 'component';
+        const entityName = getTableName() || 'component';
         const selector = entityName.toLowerCase().replace(/[^a-z0-9]/g, '-');
 
         const htmlContent = document.getElementById('codeHtml')?.value;
@@ -499,13 +453,9 @@ function toggleDataSource() {
     document.getElementById('apiFieldContainer').style.display = apiChecked ? 'block' : 'none';
     document.getElementById('jsonFieldContainer').style.display = jsonChecked ? 'block' : 'none';
 
-    // จัดการ required attribute สำหรับ tableName input
-    var tableNameInput = document.getElementById('tableNameInput');
-    if (sqlChecked) {
-        tableNameInput.setAttribute('required', 'required');
-    } else {
-        tableNameInput.removeAttribute('required');
-    }
+    // จัดการ required attribute สำหรับ select dropdown
+    var $tableSelect = $('#semanticTableDropdown');
+    // (select element is part of form — required handled by Fomantic UI validation)
 
     var apiBaseUrlSection = document.getElementById('apiBaseUrlSection');
     if (apiChecked) {
@@ -582,7 +532,8 @@ async function fetchApiSchema() {
 
         if (data.success) {
             displayParsedFields(data.fields, entityName, 'apiFieldContainer');
-            document.getElementById('tableNameInput').value = entityName;
+            // For API/JSON mode, store entity name as hidden value for form submit
+            window.parsedEntityName = entityName;
         } else {
             showToast('Error: ' + data.errorMessage, 'danger');
         }
@@ -616,7 +567,7 @@ async function parseJsonSchema() {
 
         if (data.success) {
             displayParsedFields(data.fields, entityName, 'jsonFieldContainer');
-            document.getElementById('tableNameInput').value = entityName;
+            window.parsedEntityName = entityName;
         } else {
             showToast('Error: ' + data.errorMessage, 'danger');
         }
@@ -758,12 +709,33 @@ function displayGeneratedCode(data) {
     var layoutType = data.layoutType || 'TableView';
     var cssFramework = data.cssFramework || 'Bootstrap';
 
+    // Generate Dependency Check UI
+    var dependencyAlert = '';
+    if (data.isGet) {
+        dependencyAlert = `
+            <div class="alert alert-warning border-start border-4 border-warning shadow-sm mb-3">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-terminal me-2 fs-5"></i>
+                    <strong class="text-dark">Required Dependencies</strong>
+                </div>
+                <p class="small mb-2">To use the <strong>Excel & PDF Export</strong> features, please run this command in your project terminal:</p>
+                <div class="bg-dark text-white p-2 rounded d-flex justify-content-between align-items-center font-monospace" style="font-size: 0.85rem;">
+                    <span id="npmCommand">npm install xlsx@^0.18.5 jspdf@^2.5.2 jspdf-autotable@^3.8.3</span>
+                    <button type="button" class="btn btn-sm btn-outline-light py-0 px-2" onclick="copyText('npmCommand', true)" title="Copy Command">
+                        <i class="fa-regular fa-copy" style="font-size: 0.7rem;"></i>
+                    </button>
+                </div>
+            </div>`;
+    }
+
     parentCol.innerHTML = `
                 <label class="fw-bold mb-1">Create Component</label>
                 <div class="bg-secondary text-white p-2 rounded mb-3 d-flex justify-content-between align-items-center font-monospace">
                     <span id="cliCommand">ng generate component <strong>${data.selector || 'component-name'}</strong> --standalone</span>
                     <button type="button" class="btn btn-sm btn-dark" onclick="copyText('cliCommand', true)"><i class="fa-regular fa-copy"></i></button>
                 </div>        
+
+                ${dependencyAlert}
 
                 <div class="card card-result shadow-sm h-75" style="margin-bottom: 10px;" id="resultCard">
                     <div class="card-header d-flex justify-content-between align-items-center">
@@ -1287,38 +1259,39 @@ function maskConnectionString(conn) {
 function toggleAs400UI(isAs400) {
     const standardSection = document.getElementById('standardTableSection');
     const as400Section = document.getElementById('as400SpecialSection');
-    const tableInput = document.getElementById('tableNameInput');
 
     if (isAs400) {
         if (standardSection) standardSection.style.display = 'none';
         if (as400Section) as400Section.style.display = 'block';
-        if (tableInput) tableInput.placeholder = "Combined Name (LIBRARY.TABLE)";
+        // AS400 mode: use taller line-height for dropdown text
+        document.querySelectorAll('.ui.dropdown .text').forEach(el => el.classList.add('as400-mode'));
     } else {
         if (standardSection) standardSection.style.display = 'block';
         if (as400Section) as400Section.style.display = 'none';
-        if (tableInput) tableInput.placeholder = "or type table name manually";
+        // Normal mode: remove AS400 line-height
+        document.querySelectorAll('.ui.dropdown .text').forEach(el => el.classList.remove('as400-mode'));
     }
 }
 
 function syncAs400TableName() {
     const lib = document.getElementById('libraryInput').value.trim();
     const table = document.getElementById('tableNameAs400Input').value.trim();
-    const combined = document.getElementById('tableNameInput');
-    
+    const input = document.getElementById('tableNameInput');
+
     if (lib && table) {
-        combined.value = `${lib}.${table}`.toUpperCase();
+        if (input) input.value = `${lib}.${table}`.toUpperCase();
     } else if (table) {
-        combined.value = table.toUpperCase();
+        if (input) input.value = table.toUpperCase();
     }
 }
 
 function syncAs400FromManual() {
     if (currentDbType !== 'AS400') return;
-    
-    const combined = document.getElementById('tableNameInput').value.trim();
+
+    const combined = getTableName();
     const libInput = document.getElementById('libraryInput');
     const tableInput = document.getElementById('tableNameAs400Input');
-    
+
     if (combined && combined.includes('.')) {
         const parts = combined.split('.');
         if (libInput) libInput.value = parts[0].trim().toUpperCase();

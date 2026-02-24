@@ -148,6 +148,8 @@ namespace AngularGenerator.Services.Builders
             _css.AppendLine("}");
             _css.AppendLine();
 
+            WithPaginationStyles();
+
             return this;
         }
 
@@ -191,19 +193,115 @@ namespace AngularGenerator.Services.Builders
             _css.AppendLine("}");
             _css.AppendLine();
 
-            _css.AppendLine(".badge {");
-            _css.AppendLine("  padding: 4px 8px;");
-            _css.AppendLine("  border-radius: 10px;");
-            _css.AppendLine("  font-size: 0.75rem;");
+
+
+
+            return this;
+        }
+
+        /// <summary>
+        /// Build CSS สำหรับ Pagination (ใช้ร่วมกันทั้ง Table View และ Card View)
+        /// รองรับ: page size selector, ellipsis page numbers, prev/next, status display
+        /// </summary>
+        private CssBuilder WithPaginationStyles()
+        {
+            _css.AppendLine("/* Pagination Styles */");
+            _css.AppendLine(".pagination-wrapper {");
+            _css.AppendLine("  display: flex;");
+            _css.AppendLine("  justify-content: space-between;");
+            _css.AppendLine("  align-items: center;");
+            _css.AppendLine("  margin-top: 30px;");
+            _css.AppendLine("  padding: 20px;");
+            _css.AppendLine("  background: #f8f9fa;");
+            _css.AppendLine("  border-radius: 8px;");
+            _css.AppendLine("  border: 1px solid #e0e0e0;");
+            _css.AppendLine("  flex-wrap: wrap;");
+            _css.AppendLine("  gap: 15px;");
+            _css.AppendLine("}");
+            _css.AppendLine();
+            _css.AppendLine(".pagination-info {");
+            _css.AppendLine("  display: flex;");
+            _css.AppendLine("  align-items: center;");
+            _css.AppendLine("  gap: 20px;");
+            _css.AppendLine("  flex-wrap: wrap;");
+            _css.AppendLine("}");
+            _css.AppendLine();
+            _css.AppendLine(".page-size-label {");
+            _css.AppendLine("  display: flex;");
+            _css.AppendLine("  align-items: center;");
+            _css.AppendLine("  gap: 8px;");
+            _css.AppendLine("  font-size: 14px;");
+            _css.AppendLine("  color: #333;");
+            _css.AppendLine("  font-weight: 500;");
+            _css.AppendLine("}");
+            _css.AppendLine();
+            _css.AppendLine(".page-size-select {");
+            _css.AppendLine("  padding: 6px 12px;");
+            _css.AppendLine("  border: 1px solid #ddd;");
+            _css.AppendLine("  border-radius: 4px;");
+            _css.AppendLine("  background: white;");
+            _css.AppendLine("  cursor: pointer;");
+            _css.AppendLine("  font-size: 14px;");
+            _css.AppendLine("  font-weight: 600;");
+            _css.AppendLine("  color: #333;");
+            _css.AppendLine("}");
+            _css.AppendLine(".page-size-select:hover { border-color: #007bff; }");
+            _css.AppendLine();
+            _css.AppendLine(".total-info {");
+            _css.AppendLine("  font-size: 14px;");
+            _css.AppendLine("  color: #666;");
+            _css.AppendLine("  font-weight: 500;");
+            _css.AppendLine("}");
+            _css.AppendLine();
+            _css.AppendLine(".pagination-buttons {");
+            _css.AppendLine("  display: flex;");
+            _css.AppendLine("  gap: 6px;");
+            _css.AppendLine("  align-items: center;");
+            _css.AppendLine("  flex-wrap: wrap;");
+            _css.AppendLine("}");
+            _css.AppendLine();
+            _css.AppendLine(".btn-page {");
+            _css.AppendLine("  padding: 8px 14px;");
+            _css.AppendLine("  border: 1px solid #ddd;");
+            _css.AppendLine("  background: white;");
+            _css.AppendLine("  color: #333;");
+            _css.AppendLine("  border-radius: 4px;");
+            _css.AppendLine("  cursor: pointer;");
+            _css.AppendLine("  font-size: 14px;");
+            _css.AppendLine("  font-weight: 500;");
+            _css.AppendLine("  transition: all 0.2s;");
+            _css.AppendLine("  min-width: 40px;");
+            _css.AppendLine("}");
+            _css.AppendLine(".btn-page:hover:not(:disabled) {");
+            _css.AppendLine("  background: #007bff;");
+            _css.AppendLine("  color: white;");
+            _css.AppendLine("  border-color: #007bff;");
+            _css.AppendLine("  transform: translateY(-1px);");
+            _css.AppendLine("}");
+            _css.AppendLine(".btn-page.active {");
+            _css.AppendLine("  background: #007bff;");
+            _css.AppendLine("  color: white;");
+            _css.AppendLine("  border-color: #007bff;");
+            _css.AppendLine("  font-weight: 700;");
+            _css.AppendLine("}");
+            _css.AppendLine(".btn-page:disabled {");
+            _css.AppendLine("  background: #e9ecef;");
+            _css.AppendLine("  color: #adb5bd;");
+            _css.AppendLine("  cursor: not-allowed;");
+            _css.AppendLine("  border-color: #dee2e6;");
+            _css.AppendLine("}");
+            _css.AppendLine();
+            _css.AppendLine(".page-dots {");
+            _css.AppendLine("  padding: 0 8px;");
+            _css.AppendLine("  color: #999;");
             _css.AppendLine("  font-weight: bold;");
             _css.AppendLine("}");
-            _css.AppendLine(".badge-active {");
-            _css.AppendLine("  background: #d4edda;");
-            _css.AppendLine("  color: #155724;");
-            _css.AppendLine("}");
-            _css.AppendLine(".badge-inactive {");
-            _css.AppendLine("  background: #f8d7da;");
-            _css.AppendLine("  color: #721c24;");
+            _css.AppendLine();
+            _css.AppendLine("@media (max-width: 768px) {");
+            _css.AppendLine("  .pagination-wrapper { flex-direction: column; align-items: stretch; }");
+            _css.AppendLine("  .pagination-info { justify-content: space-between; width: 100%; }");
+            _css.AppendLine("  .pagination-buttons { justify-content: center; width: 100%; }");
+            _css.AppendLine("  .btn-page { font-size: 12px; padding: 6px 10px; min-width: 35px; }");
             _css.AppendLine("}");
             _css.AppendLine();
 
@@ -489,6 +587,8 @@ namespace AngularGenerator.Services.Builders
             _css.AppendLine("  .product-grid { grid-template-columns: 1fr; }");
             _css.AppendLine("}");
             _css.AppendLine();
+
+            WithPaginationStyles();
 
             return this;
         }

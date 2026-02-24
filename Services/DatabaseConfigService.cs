@@ -9,12 +9,22 @@ namespace AngularGenerator.Services
     /// </summary>
     public class DatabaseConfigService
     {
-        private readonly string _configFilePath;
+        private string _configFilePath;
+        internal string ConfigFilePath => _configFilePath;
         private DatabaseConfigCollection _configs = new DatabaseConfigCollection();
 
         public DatabaseConfigService(IWebHostEnvironment env)
         {
             _configFilePath = Path.Combine(env.ContentRootPath, "database-configs.json");
+            LoadConfigurations();
+        }
+
+        /// <summary>
+        /// Constructor for testing with specific file path
+        /// </summary>
+        internal DatabaseConfigService(string testFilePath)
+        {
+            _configFilePath = testFilePath;
             LoadConfigurations();
         }
 
@@ -200,7 +210,7 @@ namespace AngularGenerator.Services
         /// <summary>
         /// Mask password in connection string for display
         /// </summary>
-        private string MaskPassword(string connectionString)
+        internal static string MaskPassword(string connectionString)
         {
             if (string.IsNullOrEmpty(connectionString))
                 return connectionString;

@@ -64,6 +64,18 @@ namespace AngularGenerator.Services.Builders.Base
                 _sb.AppendLine($"          <span class=\"me-2 fs-5\">&#10010;</span> Add {_definition.EntityName}");
                 _sb.AppendLine("        </button>");
             }
+
+            if (_definition.IsGet)
+            {
+                _sb.AppendLine("        <div class=\"btn-group shadow-sm\">");
+                _sb.AppendLine("          <button class=\"btn btn-outline-success d-flex align-items-center fw-bold\" (click)=\"exportToExcel()\" title=\"Export to Excel\">");
+                _sb.AppendLine("            Excel");
+                _sb.AppendLine("          </button>");
+                _sb.AppendLine("          <button class=\"btn btn-outline-danger d-flex align-items-center fw-bold\" (click)=\"exportToPdf()\" title=\"Export to PDF\">");
+                _sb.AppendLine("            PDF");
+                _sb.AppendLine("          </button>");
+                _sb.AppendLine("        </div>");
+            }
             
             _sb.AppendLine("      </div>");
             _sb.AppendLine("    </div>");
@@ -186,10 +198,25 @@ namespace AngularGenerator.Services.Builders.Base
         }
 
         /// <summary>
-        /// Builds pagination footer (commonly used in Table view)
-        /// Can be called by derived classes
+        /// Builds full Angular 17+ pagination footer.
+        /// - Bootstrap: uses native .pagination / .page-item / .page-link classes
+        /// - BasicCSS : uses custom .pagination-wrapper / .btn-page classes
+        /// Both support: page size 10/20/50/100, ellipsis page numbers, prev/next, page status
         /// </summary>
         protected virtual void BuildPaginationFooter()
+        {
+            if (_definition.CssFramework == CSSFramework.Bootstrap)
+            {
+                BuildBootstrapPagination();
+            }
+            else
+            {
+                BuildBasicCssPagination();
+            }
+        }
+
+        // ─── Bootstrap 5 native pagination (original) ────────────────────────────
+        private void BuildBootstrapPagination()
         {
             _sb.AppendLine("    <div class=\"card-footer bg-white border-top py-3\">");
             _sb.AppendLine("      <div class=\"d-flex justify-content-between align-items-center flex-wrap gap-3\">");
@@ -237,6 +264,54 @@ namespace AngularGenerator.Services.Builders.Base
             _sb.AppendLine("      </nav>");
             _sb.AppendLine("    </div>");
             _sb.AppendLine("</div>");
+        }
+
+        // ─── BasicCSS custom pagination ───────────────────────────────────────────
+        private void BuildBasicCssPagination()
+        {
+            _sb.AppendLine();
+            _sb.AppendLine("    <!-- Pagination Controls -->");
+            _sb.AppendLine("    <div class=\"pagination-wrapper\">");
+            _sb.AppendLine("      <div class=\"pagination-info\">");
+            _sb.AppendLine("        <label class=\"page-size-label\">");
+            _sb.AppendLine("          แสดง:");
+            _sb.AppendLine("          <select class=\"page-size-select\" [value]=\"pageSize()\" (change)=\"setPageSize(+$any($event.target).value)\">");
+            _sb.AppendLine("            <option [value]=\"10\">10</option>");
+            _sb.AppendLine("            <option [value]=\"20\">20</option>");
+            _sb.AppendLine("            <option [value]=\"50\">50</option>");
+            _sb.AppendLine("            <option [value]=\"100\">100</option>");
+            _sb.AppendLine("          </select>");
+            _sb.AppendLine("          รายการต่อหน้า");
+            _sb.AppendLine("        </label>");
+            _sb.AppendLine("        <span class=\"total-info\">");
+            _sb.AppendLine("          หน้า {{ currentPage() }} จาก {{ totalPages() }}");
+            _sb.AppendLine("        </span>");
+            _sb.AppendLine("      </div>");
+            _sb.AppendLine();
+            _sb.AppendLine("      <div class=\"pagination-buttons\">");
+            _sb.AppendLine("        <button class=\"btn-page\" (click)=\"setPage(currentPage() - 1)\" [disabled]=\"currentPage() === 1\">");
+            _sb.AppendLine("          ← ก่อนหน้า");
+            _sb.AppendLine("        </button>");
+            _sb.AppendLine();
+            _sb.AppendLine("        @for (page of [].constructor(totalPages()); track $index) {");
+            _sb.AppendLine("          @if ($index + 1 === currentPage() ||");
+            _sb.AppendLine("               $index + 1 === currentPage() - 1 ||");
+            _sb.AppendLine("               $index + 1 === currentPage() + 1 ||");
+            _sb.AppendLine("               $index + 1 === 1 ||");
+            _sb.AppendLine("               $index + 1 === totalPages()) {");
+            _sb.AppendLine("            <button class=\"btn-page\" [class.active]=\"currentPage() === $index + 1\" (click)=\"setPage($index + 1)\">");
+            _sb.AppendLine("              {{ $index + 1 }}");
+            _sb.AppendLine("            </button>");
+            _sb.AppendLine("          } @else if ($index + 1 === currentPage() - 2 || $index + 1 === currentPage() + 2) {");
+            _sb.AppendLine("            <span class=\"page-dots\">...</span>");
+            _sb.AppendLine("          }");
+            _sb.AppendLine("        }");
+            _sb.AppendLine();
+            _sb.AppendLine("        <button class=\"btn-page\" (click)=\"setPage(currentPage() + 1)\" [disabled]=\"currentPage() === totalPages()\">");
+            _sb.AppendLine("          ถัดไป →");
+            _sb.AppendLine("        </button>");
+            _sb.AppendLine("      </div>");
+            _sb.AppendLine("    </div>");
         }
     }
 }

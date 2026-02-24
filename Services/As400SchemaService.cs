@@ -298,7 +298,7 @@ namespace AngularGenerator.Services
             }
         }
 
-        private string MapAS400Type(string as400Type)
+        internal string MapAS400Type(string as400Type)
         {
             // Map AS400/DB2 types to standard SQL types
             var type = as400Type?.ToUpper().Trim() ?? "";

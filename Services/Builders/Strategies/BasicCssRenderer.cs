@@ -23,8 +23,7 @@ namespace AngularGenerator.Services.Builders.Strategies
         
         public string GetTableClass() => "table";
         
-        public string GetBadgeClass(bool isActive) 
-            => isActive ? "badge badge-active" : "badge badge-inactive";
+        public string GetBadgeClass(bool isActive) => string.Empty;
         
         public string GetInputClass() => "form-control";
         

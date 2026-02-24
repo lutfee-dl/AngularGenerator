@@ -80,12 +80,6 @@ namespace AngularGenerator.Services.Builders
             _sb.AppendLine("              }");
             _sb.AppendLine("            }");
 
-            // Status column
-            if (hasCheckbox)
-            {
-                _sb.AppendLine("            <th>Status</th>");
-            }
-
             // Actions column
             if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
             {
@@ -108,19 +102,7 @@ namespace AngularGenerator.Services.Builders
             _sb.AppendLine("                }");
             _sb.AppendLine("              }");
 
-            // Status badge
-            if (hasCheckbox)
-            {
-                var checkboxField = _definition.Fields.FirstOrDefault(f => f.UIControl == ControlType.Checkbox);
-                if (checkboxField != null)
-                {
-                    _sb.AppendLine("              <td class=\"text-center\">");
-                    _sb.AppendLine($"                <span class=\"badge\" [class.badge-active]=\"!item.{checkboxField.FieldName}\" [class.badge-inactive]=\"item.{checkboxField.FieldName}\">");
-                    _sb.AppendLine($"                  {{{{ item.{checkboxField.FieldName} ? 'Inactive' : 'Active' }}}}");
-                    _sb.AppendLine("                </span>");
-                    _sb.AppendLine("              </td>");
-                }
-            }
+
 
             // Actions
             if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
@@ -212,19 +194,7 @@ namespace AngularGenerator.Services.Builders
             _sb.AppendLine("                }");
             _sb.AppendLine("              }");
             
-            // Status badge (for checkbox fields)
-            if (hasCheckbox)
-            {
-                var checkboxField = _definition.Fields.FirstOrDefault(f => f.UIControl == ControlType.Checkbox);
-                if (checkboxField != null)
-                {
-                    _sb.AppendLine("              <td class=\"text-center\">");
-                    _sb.AppendLine($"                <span class=\"badge rounded-pill {{{{ item.{checkboxField.FieldName} ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success' }}}} px-3\">");
-                    _sb.AppendLine($"                  {{{{ item.{checkboxField.FieldName} ? 'Inactive' : 'Active' }}}}");
-                    _sb.AppendLine("                </span>");
-                    _sb.AppendLine("              </td>");
-                }
-            }
+
             
             // Actions - Sticky Right
             if (_definition.IsUpdate || _definition.IsDelete || _definition.IsGetById)
@@ -285,7 +255,7 @@ namespace AngularGenerator.Services.Builders
             
             _sb.AppendLine("    <div class=\"mat-elevation-z2\">");
             _sb.AppendLine("    <div style=\"overflow-x: auto; max-height: 85vh;\">");
-            _sb.AppendLine($"      <table mat-table [dataSource]=\"filteredList()\" matSort style=\"width: 100%;\">");
+            _sb.AppendLine($"      <table mat-table [dataSource]=\"paginatedList()\" matSort style=\"width: 100%;\">");
             _sb.AppendLine();
             
             // Dynamic Columns Loop
@@ -385,34 +355,19 @@ namespace AngularGenerator.Services.Builders
         {
             if (_renderer.RequiresSpecialTableRendering())
             {
-                _sb.AppendLine("    <mat-paginator [pageSizeOptions]=\"[5, 10, 25, 100]\"");
+                // Angular Material — mat-paginator with full signal bindings
+                _sb.AppendLine("    <mat-paginator [length]=\"filteredList().length\"");
+                _sb.AppendLine("                   [pageSize]=\"pageSize()\"");
+                _sb.AppendLine("                   [pageIndex]=\"currentPage()\"");
+                _sb.AppendLine("                   [pageSizeOptions]=\"[10, 20, 50, 100]\"");
+                _sb.AppendLine("                   (page)=\"onPageChange($event)\"");
                 _sb.AppendLine("                   showFirstLastButtons");
-                _sb.AppendLine("                   aria-label=\"Select page of periodic elements\">");
+                _sb.AppendLine("                   aria-label=\"Select page\">");
                 _sb.AppendLine("    </mat-paginator>");
-            }
-            else if (_definition.CssFramework == CSSFramework.BasicCSS)
-            {
-                _sb.AppendLine("    <div class=\"pagination-container\" style=\"margin-top: 20px; display: flex; justify-content: space-between; align-items: center;\">");
-                _sb.AppendLine("      <div>");
-                _sb.AppendLine("        Show ");
-                _sb.AppendLine("        <select [ngModel]=\"pageSize()\" (ngModelChange)=\"setPageSize($any($event))\" style=\"padding: 5px;\">");
-                _sb.AppendLine("          <option [value]=\"10\">10</option>");
-                _sb.AppendLine("          <option [value]=\"20\">20</option>");
-                _sb.AppendLine("          <option [value]=\"50\">50</option>");
-                _sb.AppendLine("          <option [value]=\"100\">100</option>");
-                _sb.AppendLine("        </select>");
-                _sb.AppendLine("        entries");
-                _sb.AppendLine("      </div>");
-                
-                _sb.AppendLine("      <div class=\"pagination-controls\">");
-                _sb.AppendLine("        <button class=\"btn\" [disabled]=\"currentPage() === 1\" (click)=\"setPage(currentPage() - 1)\">Previous</button>");
-                _sb.AppendLine("        <span style=\"margin: 0 10px;\"> Page {{ currentPage() }} of {{ totalPages() }} </span>");
-                _sb.AppendLine("        <button class=\"btn\" [disabled]=\"currentPage() === totalPages()\" (click)=\"setPage(currentPage() + 1)\">Next</button>");
-                _sb.AppendLine("      </div>");
-                _sb.AppendLine("    </div>");
             }
             else
             {
+                // BasicCSS and Bootstrap use the full pagination template from base
                 base.BuildPaginationFooter();
             }
         }
@@ -457,6 +412,18 @@ namespace AngularGenerator.Services.Builders
                     _sb.AppendLine($"            Add {_definition.EntityName}");
                     _sb.AppendLine("          </button>");
                 }
+
+                if (_definition.IsGet)
+                {
+                    _sb.AppendLine("          <button mat-stroked-button color=\"accent\" (click)=\"exportToExcel()\" title=\"Export to Excel\">");
+                    _sb.AppendLine("            <mat-icon>table_view</mat-icon>");
+                    _sb.AppendLine("            Excel");
+                    _sb.AppendLine("          </button>");
+                    _sb.AppendLine("          <button mat-stroked-button color=\"warn\" (click)=\"exportToPdf()\" title=\"Export to PDF\">");
+                    _sb.AppendLine("            <mat-icon>picture_as_pdf</mat-icon>");
+                    _sb.AppendLine("            PDF");
+                    _sb.AppendLine("          </button>");
+                }
                 
                 _sb.AppendLine("        </div>");
                 _sb.AppendLine("      </div>");
@@ -481,6 +448,12 @@ namespace AngularGenerator.Services.Builders
                     _sb.AppendLine("      <button class=\"btn btn-add\" (click)=\"openCreate()\">");
                     _sb.AppendLine($"        + Add {_definition.EntityName}");
                     _sb.AppendLine("      </button>");
+                }
+
+                if (_definition.IsGet)
+                {
+                    _sb.AppendLine("      <button class=\"btn\" style=\"background: #2e7d32; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;\" (click)=\"exportToExcel()\">Excel</button>");
+                    _sb.AppendLine("      <button class=\"btn\" style=\"background: #d32f2f; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;\" (click)=\"exportToPdf()\">PDF</button>");
                 }
                 
                 _sb.AppendLine("    </div>");

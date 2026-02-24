@@ -50,26 +50,20 @@ namespace AngularGenerator.Controllers
                 if (string.IsNullOrEmpty(tableName)) 
                     return Json(new { success = false, message = "Table name is empty" });
                 
-                Console.WriteLine($"GetColumns: Table='{tableName}'");
                 
                 var service = _dbFactory.GetCurrentService();
-                Console.WriteLine($"GetColumns: DbType={service.DbType}");
                 
                 var columns = service.GetSchema(tableName);
-                Console.WriteLine($"GetColumns: Found {columns?.Count() ?? 0} columns");
                 
                 if (columns == null || !columns.Any()) 
                     return Json(new { success = false, message = "Table not found or has no columns." });
 
                 var componentDef = _factory.Create(tableName, columns);
-                Console.WriteLine($"GetColumns: Created {componentDef.Fields.Count} fields");
                 
                 return Json(new { success = true, fields = componentDef.Fields });
             }
             catch (Exception ex) 
             {
-                Console.WriteLine($"GetColumns Error: {ex.Message}");
-                Console.WriteLine($"GetColumns StackTrace: {ex.StackTrace}");
                 return Json(new { success = false, message = ex.Message }); 
             }
         }
@@ -319,7 +313,8 @@ namespace AngularGenerator.Controllers
                     css = generationModel.GeneratedCss,
                     interfaceCode = generationModel.GeneratedInterface,
                     selector = generationModel.Selector,
-                    entityName = generationModel.EntityName
+                    entityName = generationModel.EntityName,
+                    isGet = generationModel.IsGet
                 });
             }
             catch (Exception ex)
@@ -403,7 +398,8 @@ namespace AngularGenerator.Controllers
                     selector = result.Selector,
                     entityName = result.EntityName,
                     layoutType = result.LayoutType.ToString(),
-                    cssFramework = result.CssFramework.ToString()
+                    cssFramework = result.CssFramework.ToString(),
+                    isGet = result.IsGet
                 });
             }
             catch (Exception ex)

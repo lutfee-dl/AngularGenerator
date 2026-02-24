@@ -246,7 +246,7 @@ namespace AngularGenerator.Services.Builders
                 _sb.AppendLine($"      @for (item of filteredList(); track item.{primaryKey}) {{");
                 BuildBootstrapCard(primaryKey, hasCheckbox);
                 _sb.AppendLine("      }");
-                 _sb.AppendLine("    </div>");
+                _sb.AppendLine("    </div>");
             }
 
             _sb.AppendLine();
@@ -256,6 +256,12 @@ namespace AngularGenerator.Services.Builders
             _sb.AppendLine("        </div>");
             _sb.AppendLine("    }");
             _sb.AppendLine("  }");
+
+            // Pagination for Bootstrap and BasicCSS card views
+            if (!_renderer.RequiresSpecialTableRendering())
+            {
+                BuildPaginationFooter();
+            }
         }
         
         private void BuildMaterialCard(string primaryKey, bool hasCheckbox)
@@ -269,20 +275,7 @@ namespace AngularGenerator.Services.Builders
                 _sb.AppendLine("          <mat-card-header>");
                 _sb.AppendLine($"            <mat-card-title>{{{{ item.{titleField.FieldName} }}}}</mat-card-title>");
                 
-                if (hasCheckbox)
-                {
-                    var checkboxField = _definition.Fields.FirstOrDefault(f => f.UIControl == ControlType.Checkbox);
-                    if (checkboxField != null)
-                    {
-                        _sb.AppendLine("            <div class=\"card-header-actions\">");
-                        _sb.AppendLine($"              @if (item.{checkboxField.FieldName}) {{");
-                        _sb.AppendLine("                <mat-chip color=\"primary\">Active</mat-chip>");
-                        _sb.AppendLine("              } @else {");
-                        _sb.AppendLine("                <mat-chip color=\"warn\">Inactive</mat-chip>");
-                        _sb.AppendLine("              }");
-                        _sb.AppendLine("            </div>");
-                    }
-                }
+
                 
                 _sb.AppendLine("          </mat-card-header>");
             }
@@ -369,16 +362,7 @@ namespace AngularGenerator.Services.Builders
                  _sb.AppendLine("              <img src=\"https://placehold.co/600x400?text=No+Image\" class=\"card-img-top\" alt=\"Product\" style=\"height: 200px; object-fit: cover;\">");
              }
              
-             if (hasCheckbox)
-             {
-                 var checkboxField = _definition.Fields.FirstOrDefault(f => f.UIControl == ControlType.Checkbox);
-                 if (checkboxField != null)
-                 {
-                     _sb.AppendLine($"              <span class=\"position-absolute top-0 end-0 m-2 badge rounded-pill\" [class.bg-success]=\"!item.{checkboxField.FieldName}\" [class.bg-danger]=\"item.{checkboxField.FieldName}\">");
-                     _sb.AppendLine($"                {{{{ item.{checkboxField.FieldName} ? 'Inactive' : 'Active' }}}}");
-                     _sb.AppendLine("              </span>");
-                 }
-             }
+
              _sb.AppendLine("            </div>");
              
              _sb.AppendLine("            <div class=\"card-body\">");
