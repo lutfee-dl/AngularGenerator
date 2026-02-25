@@ -46,7 +46,7 @@ namespace AngularGenerator.Services.Builders
             }
             
             // Default component decorator
-            _componentDecorator.Add($"selector: '{_definition.Selector}'");
+            _componentDecorator.Add($"selector: 'app-{_definition.Selector}'");
             _componentDecorator.Add("standalone: true");
             _componentDecorator.Add($"templateUrl: './{_definition.EntityName.ToLower()}.html'");
             _componentDecorator.Add($"styleUrls: ['./{_definition.EntityName.ToLower()}.css']");            

@@ -728,21 +728,37 @@ function displayGeneratedCode(data) {
             </div>`;
     }
 
+    // Build the main UI with CLI command outside and Result card
     parentCol.innerHTML = `
                 <label class="fw-bold mb-1">Create Component</label>
                 <div class="bg-secondary text-white p-2 rounded mb-3 d-flex justify-content-between align-items-center font-monospace">
                     <span id="cliCommand">ng generate component <strong>${data.selector || 'component-name'}</strong> --standalone</span>
                     <button type="button" class="btn btn-sm btn-dark" onclick="copyText('cliCommand', true)"><i class="fa-regular fa-copy"></i></button>
-                </div>        
+                </div>
 
-                ${dependencyAlert}
+                <!-- Setup Guide Action -->
+                <div class="alert alert-primary border-0 shadow-sm d-flex justify-content-between align-items-center py-2 mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary text-white rounded-circle p-2 me-3" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-magic"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Ready to implement?</h6>
+                            <small class="text-muted">Follow our step-by-step guide to integrate this code.</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#guideModal">
+                        <i class="fas fa-book-open me-1"></i> Open Setup Guide
+                    </button>
+                </div>
 
                 <div class="card card-result shadow-sm h-75" style="margin-bottom: 10px;" id="resultCard">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>Result ${data.entityName || ''}</span>
+                        <span>Result for ${data.entityName || ''}</span>
 
                         <div class="d-flex align-items-center">
-                            <div class="me-3"> <span class="badge bg-info">
+                            <div class="me-3"> 
+                                <span class="badge bg-info">
                                     <i class="fas fa-${layoutType === 'TableView' ? 'table' : 'th-large'}"></i>
                                     ${layoutType}
                                 </span>
@@ -752,8 +768,8 @@ function displayGeneratedCode(data) {
                                 </span>
                             </div>
                             
-                            <button type="button" class="btn btn-primary btn-sm text-white" onclick="downloadAllAsZip()">
-                                <i class="fas fa-download me-1"></i> Download All (ZIP)
+                            <button type="button" class="btn btn-warning btn-sm text-dark fw-bold px-3 shadow-sm" onclick="downloadAllAsZip()">
+                                <i class="fas fa-download me-1"></i> Download All
                             </button>
                         </div>
                     </div>
@@ -794,6 +810,111 @@ function displayGeneratedCode(data) {
                     </div>
                 </div>
             `;
+
+    // Update Modal Content
+    const guideModalBody = document.getElementById('guideModalBody');
+    if (guideModalBody) {
+        guideModalBody.innerHTML = `
+            <div class="accordion shadow-sm" id="guideAccordionModal">
+                <!-- Step 1: Prerequisites -->
+                <div class="accordion-item border-0 mb-2 rounded shadow-sm">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button bg-white text-dark fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#mStep1">
+                            <i class="fas fa-terminal me-2 text-primary"></i> 1. Prepare Component & Dependencies
+                        </button>
+                    </h2>
+                    <div id="mStep1" class="accordion-collapse collapse show" data-bs-parent="#guideAccordionModal">
+                        <div class="accordion-body bg-white pt-0">
+                            <label class="small text-muted mb-1 mt-2 d-block">สร้าง Component ด้วยคำสั่ง:</label>
+                            <div class="bg-dark text-white p-2 rounded mb-3 d-flex justify-content-between align-items-center font-monospace" style="font-size: 0.85rem;">
+                                <span id="cliCommandModal">ng generate component <strong>${data.selector || 'component-name'}</strong> --standalone</span>
+                                <button type="button" class="btn btn-sm btn-outline-light py-0 px-2" onclick="copyText('cliCommandModal', true)"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                            
+                            ${dependencyAlert ? `
+                            <div class="alert alert-info border-0 small mb-0">
+                                <p class="mb-1 fw-bold text-dark"><i class="fas fa-info-circle me-1 text-info"></i> Excel & PDF Export:</p>
+                                <p class="mb-2 text-dark">หากคุณเปิดใช้งานฟีเจอร์ Export กรุณาติดตั้ง Library เพิ่มเติม:</p>
+                                <div class="bg-dark text-white p-2 rounded d-flex justify-content-between align-items-center font-monospace mb-0" style="font-size: 0.75rem;">
+                                    <span id="npmCommandModal">npm install xlsx@^0.18.5 jspdf@^2.5.2 jspdf-autotable@^3.8.3</span>
+                                    <button type="button" class="btn btn-sm btn-outline-light py-0 px-1" onclick="copyText('npmCommandModal', true)"><i class="fa-regular fa-copy"></i></button>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Routing Configuration -->
+                <div class="accordion-item border-0 mb-2 rounded shadow-sm">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed bg-white text-dark fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#mStep2">
+                            <i class="fas fa-route me-2 text-info"></i> 2. Register Routing
+                        </button>
+                    </h2>
+                    <div id="mStep2" class="accordion-collapse collapse" data-bs-parent="#guideAccordionModal">
+                        <div class="accordion-body bg-white pt-0">
+                            <label class="small text-muted mb-2 mt-2 d-block">Add this route to <strong>src/app/app.routes.ts</strong>:</label>
+                            <div class="d-flex justify-content-end mb-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary py-0" onclick="copyText('codeRoutingModal')">
+                                    <i class="fa-regular fa-copy me-1"></i> Copy Route
+                                </button>
+                            </div>
+                            <div class="rounded-3 overflow-hidden border">
+                                <pre class="m-0" style="background: #1e1e1e; font-size: 0.85rem;"><code id="codeRoutingModal" class="language-typescript">import { Routes } from '@angular/router';
+import { ${data.entityName}Component } from './${(data.entityName || '').toLowerCase()}/${(data.entityName || '').toLowerCase()}.component';
+
+export const routes: Routes = [
+  { 
+    path: '${data.selector || ''}', 
+    component: ${data.entityName}Component,
+    title: '${data.entityName} Management' 
+  }
+];</code></pre>
+                            </div>
+                            <p class="small text-muted mt-2 mb-0">URL: <code>http://localhost:4200/${data.selector || ''}</code></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Global Setup -->
+                <div class="accordion-item border-0 mb-2 rounded shadow-sm">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed bg-white text-dark fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#mStep3">
+                            <i class="fas fa-tools me-2 text-success"></i> 3. Global Project Setup
+                        </button>
+                    </h2>
+                    <div id="mStep3" class="accordion-collapse collapse" data-bs-parent="#guideAccordionModal">
+                        <div class="accordion-body bg-white pt-0 text-dark">
+                            <p class="small mb-2 mt-2">Configure <strong>src/app/app.config.ts</strong> for Standalone apps:</p>
+                            <div class="rounded-3 overflow-hidden border mb-3">
+                                <pre class="m-0" style="background: #1e1e1e; font-size: 0.85rem;"><code class="language-typescript">import { provideHttpClient } from '@angular/common/http';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideHttpClient(),
+    provideAnimationsAsync(),
+  ]
+};</code></pre>
+                            </div>
+                            <div class="card border-info bg-light mb-0">
+                                <div class="card-body py-2">
+                                    <small class="text-info fw-bold"><i class="fas fa-exclamation-triangle me-1"></i> CORS Warning:</small>
+                                    <p class="small mb-0 text-dark">อย่าลืมอนุญาต URL <code>http://localhost:4200</code> ที่ API Backend</p>
+                                </div>
+                            </div>
+                            ${data.cssFramework === 'AngularMaterial' ? `
+                            <div class="mt-2 p-2 border rounded bg-light">
+                                <small class="fw-bold d-block mb-1 text-primary">Add to styles.css:</small>
+                                <code class="small">@import "@angular/material/prebuilt-themes/indigo-pink.css";</code>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 
     // Highlight code with Prism
     setTimeout(() => {
@@ -1163,7 +1284,7 @@ function saveCurrentConfiguration() {
 
         saveLocalConfigs(configs);
         
-        showToast(`บันทึกการตั้งค่า '${configName}' ลงในเบราเซอร์เรียบร้อยแล้ว`, 'success');
+        showToast(`บันทึกการตั้งค่า '${configName}' เรียบร้อยแล้ว`, 'success');
         
         // Clear save form
         document.getElementById('saveConfigName').value = '';

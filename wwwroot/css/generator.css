@@ -271,3 +271,41 @@ code[class*="language-"] {
     background: #e9ecef;
     color: #212529;
 }
+
+/* Routing Tab Styles */
+.step-badge {
+    width: 32px;
+    height: 32px;
+    background: #0d6efd;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
+}
+
+.step-item {
+    padding: 10px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.step-item:hover {
+    background: #f8f9fa;
+}
+
+.uppercase {
+    text-transform: uppercase;
+}
+
+.tracking-wider {
+    letter-spacing: 0.05em;
+}
+
+#codeRouting {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    line-height: 1.5;
+}

@@ -39,7 +39,7 @@ namespace AngularGenerator.Services
             {
                 var formattedName = char.ToUpper(componentName[0]) + componentName.Substring(1);
                 fullModel.EntityName = formattedName;
-                fullModel.Selector = "app-" + componentName.ToLower();
+                fullModel.Selector = componentName.ToLower();
             }
 
             // 2. หา Primary Key field จาก fullModel
